@@ -42,6 +42,27 @@ Because the free tier has **no backups**, export your data now and then: Supabas
 
 Upgrade path: when you have regular users, move Supabase to Pro first (no pausing, daily backups), then add the Apple and Google accounts to publish to the stores (section 3 step 6 and section 4).
 
+## Two environments: staging and production
+
+| | `staging` branch | `main` branch |
+|---|---|---|
+| Purpose | Try changes safely | What real users get |
+| Supabase | project **velora-staging** | project **velora** |
+| Website | Netlify branch deploy: `staging--<site>.netlify.app` | `<site>.netlify.app` (or your domain) |
+| Android | `eas build --profile preview` | `eas build --profile production` |
+
+The free tier allows two active Supabase projects — exactly one per environment. Never point staging at the production database.
+
+**How a change flows:** work on a branch → pull request into `staging` → check it on the staging site → pull request from `staging` into `main` → live.
+In GitHub → Settings → General → Pull Requests, allow only **Squash merging**, so each change lands as one commit authored by whoever merges it.
+
+**Setting it up** (do sections 1–3 below once per environment):
+1. **Supabase:** create two projects. Run the section 1 commands once with `--project-ref` of `velora-staging`, then again for `velora`. Each gets its own Vault secrets, `CRON_SECRET` and Auth URLs (staging Site URL = the staging site address).
+2. **Netlify:** one site from this repo with Production branch = `main`. Then Site configuration → Build & deploy → Branches and deploy contexts → **Branch deploys: Let me add individual branches** → `staging`. In Environment variables, give `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` different values per deploy context: **Production** = `velora` keys, **Branch deploys** = `velora-staging` keys.
+3. **Expo:** create the `EXPO_PUBLIC_*` variables with `--environment preview` using the staging keys, and with `--environment production` using the production keys (instead of one command for both).
+4. **GitHub (recommended):** Settings → Branches → add rules for `main` and `staging`: require a pull request and require the **CI** checks to pass before merging.
+5. **Database changes:** push new migrations to staging first (`npx supabase link --project-ref <staging-ref>` → `npx supabase db push`), test, then link the production project and push again.
+
 ---
 
 ## 1. Supabase (backend)
