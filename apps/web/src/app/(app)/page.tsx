@@ -50,7 +50,7 @@ export default function WealthPage() {
                   key={label}
                   onClick={() => setMonths(m)}
                   aria-pressed={months === m}
-                  className={cn("rounded-full px-3 py-1.5 font-mono text-[11px] text-faint", months === m && "bg-gradient-to-b from-gold-1 to-gold-2 text-white")}
+                  className={cn("rounded-full px-3 py-1.5 font-mono text-[11px] text-faint", months === m && "bg-gradient-to-b from-gold-1 to-gold-2 text-on-gold")}
                 >
                   {label}
                 </button>
@@ -63,7 +63,7 @@ export default function WealthPage() {
             <HeroMoney minor={now} currency={currency} className="mt-5 block text-[clamp(64px,9vw,128px)] leading-[.9]" />
           )}
           <div className="mt-4 flex flex-wrap items-center gap-4 text-[15px] text-muted">
-            <span className={cn("rounded-full border border-line bg-white/50 px-3 py-1 font-mono text-xs", delta >= 0 ? "text-positive" : "text-negative")}>
+            <span className={cn("rounded-full border border-line bg-surface/50 px-3 py-1 font-mono text-xs", delta >= 0 ? "text-positive" : "text-negative")}>
               {delta >= 0 ? "▲" : "▼"} {formatMoney(Math.abs(delta), currency, { cents: true })}
             </span>
             <span>past {RANGES.find(([, m]) => m === months)?.[0]}</span>

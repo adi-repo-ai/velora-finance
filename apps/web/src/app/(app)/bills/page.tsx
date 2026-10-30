@@ -32,7 +32,7 @@ export default function BillsPage() {
             const d = daysUntil(b.next_due_on);
             return (
               <li key={b.id} className="flex items-center gap-4 border-b border-line py-4">
-                <span className={cn("grid size-12 shrink-0 place-items-center rounded-2xl bg-white/60 text-center leading-none shadow-[inset_0_0_0_1px_rgb(23_20_15/.06)]", d <= 3 && "shadow-[inset_0_0_0_1.5px_rgb(201_155_91)]")}>
+                <span className={cn("grid size-12 shrink-0 place-items-center rounded-2xl bg-surface/60 text-center leading-none shadow-[inset_0_0_0_1px_rgb(23_20_15/.06)]", d <= 3 && "shadow-[inset_0_0_0_1.5px_rgb(201_155_91)]")}>
                   <span><span className="block font-serif text-xl">{new Date(`${b.next_due_on}T00:00:00`).getDate()}</span><span className="label-mono text-[9px]">{new Date(`${b.next_due_on}T00:00:00`).toLocaleString("en", { month: "short" })}</span></span>
                 </span>
                 <div className="min-w-0 flex-1">

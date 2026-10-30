@@ -28,7 +28,7 @@ export function DialogContent({ className, children, title, description, ...prop
           )}
         </div>
         {children}
-        <DialogPrimitive.Close className="absolute right-5 top-5 grid size-9 place-items-center rounded-full text-faint hover:bg-white/60 hover:text-text" aria-label="Close">
+        <DialogPrimitive.Close className="absolute right-5 top-5 grid size-9 place-items-center rounded-full text-faint hover:bg-surface/60 hover:text-text" aria-label="Close">
           ✕
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>

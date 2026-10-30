@@ -11,7 +11,7 @@ export function Orb({ size, pct, children }: { size: number; pct: number; childr
     <div
       role="img"
       aria-label={`${Math.round(fill * 100)}% saved`}
-      className="relative shrink-0 overflow-hidden rounded-full bg-white/50 shadow-[inset_0_0_0_1px_#fff,inset_0_-20px_40px_rgb(120_90_40/.12),0_20px_60px_-10px_rgb(170_120_60/.35)]"
+      className="relative shrink-0 overflow-hidden rounded-full bg-surface/50 shadow-[inset_0_0_0_1px_#fff,inset_0_-20px_40px_rgb(120_90_40/.12),0_20px_60px_-10px_rgb(170_120_60/.35)]"
       style={{ width: size, height: size }}
     >
       <div className="absolute inset-x-0 bottom-0 animate-[rise_2.4s_var(--ease-out-expo)_.3s_both]" style={{ height: `${fill * 100}%` }}>
@@ -35,7 +35,8 @@ export function Orb({ size, pct, children }: { size: number; pct: number; childr
         ))}
       </div>
       <div className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_22%,rgb(255_255_255/.7),transparent_22%),radial-gradient(circle_at_72%_82%,rgb(255_255_255/.2),transparent_25%)]" />
-      <div className="absolute inset-0 grid place-items-center text-center text-[#1d1307]">{children}</div>
+      {/* The label sits mid-orb: dark on the gold liquid, theme text colour on the empty glass above it. */}
+      <div className={`absolute inset-0 grid place-items-center text-center ${fill >= 0.5 ? "text-[#1d1307]" : "text-text"}`}>{children}</div>
     </div>
   );
 }

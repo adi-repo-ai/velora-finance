@@ -8,7 +8,7 @@ import { Platform, Pressable, View } from 'react-native';
 import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { T } from './ui';
+import { T, useTheme } from './ui';
 
 type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 
@@ -44,9 +44,10 @@ const liquid = Platform.OS === 'ios' && isLiquidGlassAvailable();
  */
 export function Dock({ state, emitter, navigateToTab }: TabBarProps) {
   const { bottom } = useSafeAreaInsets();
+  const { dark, color: theme } = useTheme();
   const items = state.routes.map((route, i) => {
     const focused = state.index === i;
-    const color = focused ? '#7A5226' : 'rgba(23,20,15,0.45)';
+    const color = theme(focused ? 'gold-2' : 'faint');
     const onPress = () => {
       const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
       if (!focused && !event.defaultPrevented) {
@@ -62,7 +63,7 @@ export function Dock({ state, emitter, navigateToTab }: TabBarProps) {
           accessibilityLabel={LABELS[route.name] ?? route.name}
           onPress={onPress}
           hitSlop={4}
-          className={focused ? 'h-[50px] flex-row items-center gap-2 rounded-full bg-white px-4' : 'h-[50px] w-[50px] items-center justify-center rounded-full'}
+          className={focused ? 'h-[50px] flex-row items-center gap-2 rounded-full bg-surface px-4' : 'h-[50px] w-[50px] items-center justify-center rounded-full'}
           style={focused ? { shadowColor: '#503c1e', shadowOpacity: 0.16, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 2 } : undefined}
         >
           <Svg width={22} height={22} viewBox="0 0 24 24">{ICONS[route.name]?.(color)}</Svg>
@@ -100,11 +101,11 @@ export function Dock({ state, emitter, navigateToTab }: TabBarProps) {
     <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: bottom + 10, alignItems: 'center' }}>
       <View
         accessibilityRole="tablist"
-        className="flex-row items-center gap-1 overflow-hidden rounded-full border border-white/90 p-[6px]"
-        style={{ backgroundColor: Platform.OS === 'android' ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.45)', shadowColor: '#503c1e', shadowOpacity: 0.22, shadowRadius: 28, shadowOffset: { width: 0, height: 14 }, elevation: 8 }}
+        className="flex-row items-center gap-1 overflow-hidden rounded-full border border-glass-edge p-[6px]"
+        style={{ backgroundColor: dark ? (Platform.OS === 'android' ? 'rgba(30,30,37,0.92)' : 'rgba(30,30,37,0.5)') : Platform.OS === 'android' ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.45)', shadowColor: dark ? '#000' : '#503c1e', shadowOpacity: 0.22, shadowRadius: 28, shadowOffset: { width: 0, height: 14 }, elevation: 8 }}
       >
         {liquid ? <GlassView glassEffectStyle="regular" style={{ position: 'absolute', inset: 0 }} />
-          : Platform.OS !== 'android' && <BlurView intensity={50} tint="light" style={{ position: 'absolute', inset: 0 }} />}
+          : Platform.OS !== 'android' && <BlurView intensity={50} tint={dark ? 'dark' : 'light'} style={{ position: 'absolute', inset: 0 }} />}
         {items}
       </View>
     </View>

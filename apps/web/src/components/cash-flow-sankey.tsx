@@ -63,11 +63,11 @@ export function CashFlowSankey({ income, spending, currency }: { income: Row[]; 
             <Layer key={`n${p.index}`}>
               <Rectangle x={p.x} y={p.y} width={p.width} height={p.height} radius={4} fill={n.color} />
               {isHub ? (
-                <text x={p.x + p.width / 2} y={p.y - 10} textAnchor="middle" fontSize={11} fontFamily="var(--font-geist-mono)" letterSpacing={2} fill="rgb(23 20 15 / .5)">
+                <text x={p.x + p.width / 2} y={p.y - 10} textAnchor="middle" fontSize={11} fontFamily="var(--font-geist-mono)" letterSpacing={2} fill="currentColor" fillOpacity={0.5}>
                   CASH IN · {formatMoney(n.amount, currency)}
                 </text>
               ) : (
-                <text x={tx} y={p.y + p.height / 2} textAnchor={left ? "end" : "start"} dominantBaseline="middle" fill="rgb(23 20 15)">
+                <text x={tx} y={p.y + p.height / 2} textAnchor={left ? "end" : "start"} dominantBaseline="middle" fill="currentColor">
                   <tspan fontSize={14}>{n.name}</tspan>
                   <tspan dx={8} fontSize={20} fontFamily="var(--font-instrument)">{formatMoney(n.amount, currency)}</tspan>
                 </text>

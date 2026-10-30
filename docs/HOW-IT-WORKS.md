@@ -218,7 +218,7 @@ A phone receives reminders after the user taps **Turn on reminders** on the Bill
 
 **Mobile.** Expo Router screens styled with NativeWind (Tailwind classes). Navigation is a custom floating **Dock**: a glass pill whose active tab expands with its label, plus a gold quick-add button. Glass surfaces use Apple's Liquid Glass on iOS 26+, blur on older iPhones and a solid frosted fill on Android. Chart: Victory Native (Skia). Animations: Reanimated, respecting the OS "reduce motion" setting.
 
-**Design tokens.** `packages/config/src/tokens.json` is the single source of the Pearl colours. Web writes them as CSS variables on `<html>` for Tailwind 4; mobile's `tailwind.config.js` reads the same file for NativeWind.
+**Design tokens and dark mode.** `packages/config/src/tokens.json` holds two colour sets: Pearl (light) and Noir (dark). Web emits both as CSS variables, with Noir inside a `prefers-color-scheme: dark` media query, so the browser switches with no flash. Mobile sets the same variables at the app root with NativeWind's `vars()`, picking the set from the phone's appearance (`userInterfaceStyle: automatic`); a `useTheme()` hook supplies colours to the few places classes can't reach (blur tint, SVG strokes, placeholders).
 
 ## 9. Security model in one list
 

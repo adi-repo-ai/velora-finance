@@ -1,5 +1,8 @@
-// Colours come from the shared Pearl tokens so web and mobile stay identical.
+// Colours come from the shared tokens (Pearl / Noir) via CSS variables set in app/_layout.tsx.
 const { pearl } = require('@velora/config/tokens.json');
+
+// Tokens that carry their own alpha can't take Tailwind opacity modifiers.
+const color = (k, v) => (v.includes('/') ? `rgb(var(--${k}))` : `rgb(var(--${k}) / <alpha-value>)`);
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -9,7 +12,7 @@ module.exports = {
   darkMode: 'class',
   theme: {
     extend: {
-      colors: Object.fromEntries(Object.entries(pearl).map(([k, v]) => [k, `rgb(${v})`])),
+      colors: Object.fromEntries(Object.entries(pearl).map(([k, v]) => [k, color(k, v)])),
       fontFamily: {
         serif: ['InstrumentSerif_400Regular'],
         'serif-italic': ['InstrumentSerif_400Regular_Italic'],

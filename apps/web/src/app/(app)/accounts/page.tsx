@@ -43,7 +43,7 @@ export default function AccountsPage() {
           <ul>
             {accounts.data?.map((a) => (
               <li key={a.id} className="flex items-center gap-4 border-b border-line py-4">
-                <span className="grid size-11 place-items-center rounded-2xl bg-white/60 font-mono text-[10px] uppercase tracking-widest text-faint shadow-[inset_0_0_0_1px_rgb(23_20_15/.06)]">{a.mask ?? a.type.slice(0, 3)}</span>
+                <span className="grid size-11 place-items-center rounded-2xl bg-surface/60 font-mono text-[10px] uppercase tracking-widest text-faint shadow-[inset_0_0_0_1px_rgb(23_20_15/.06)]">{a.mask ?? a.type.slice(0, 3)}</span>
                 <div className="flex-1"><p>{a.name}</p><p className="text-xs capitalize text-faint">{a.type}{a.institution && ` · ${a.institution}`} · {a.currency}</p></div>
                 <span className={cn("font-serif text-2xl", a.balance < 0 && "text-negative")}>{formatMoney(a.balance, a.currency, { cents: true })}</span>
               </li>

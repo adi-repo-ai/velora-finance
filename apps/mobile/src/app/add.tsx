@@ -45,7 +45,7 @@ export default function AddTransaction() {
       <View className="flex-row rounded-2xl bg-text/5 p-1">
         {(['expense', 'income'] as const).map((k) => (
           <Pressable key={k} accessibilityRole="button" accessibilityState={{ selected: kind === k }} onPress={() => { setKind(k); setCategoryId(undefined); }}
-            className={kind === k ? 'flex-1 items-center rounded-xl bg-white py-2.5' : 'flex-1 items-center py-2.5'}>
+            className={kind === k ? 'flex-1 items-center rounded-xl bg-surface py-2.5' : 'flex-1 items-center py-2.5'}>
             <T className={kind === k ? 'font-semibold capitalize' : 'font-semibold capitalize text-muted'}>{k}</T>
           </Pressable>
         ))}
@@ -62,7 +62,7 @@ export default function AddTransaction() {
       <View className="mt-3 flex-row flex-wrap justify-between gap-y-2.5">
         {KEYS.map((k) => (
           <Pressable key={k} accessibilityRole="button" accessibilityLabel={k === '⌫' ? 'Delete' : k} onPress={() => press(k)}
-            className="h-[54px] w-[31.5%] items-center justify-center rounded-2xl border border-white bg-white/60 active:bg-white">
+            className="h-[54px] w-[31.5%] items-center justify-center rounded-2xl border border-glass-edge bg-surface/60 active:bg-surface">
             <T className="text-[22px]">{k}</T>
           </Pressable>
         ))}

@@ -1,7 +1,7 @@
 # Velora Design System — "Pearl" (light) / "Noir" (dark)
 
 Private-bank feel: warm pearl surfaces, champagne-gold accents, editorial serif numerals, liquid-glass panels, and calm, physical motion.
-**The app ships Pearl only** (chosen 30 Oct 2026). Noir is kept below as an explored dark variant; tokens for it are not implemented.
+**Pearl is the light theme and Noir its dark mode.** Both apps switch automatically with the device's appearance setting — no in-app toggle. Tokens for both live in `packages/config/src/tokens.json`.
 
 Live reference: open [`mockup.html`](./mockup.html) in Chrome — `?view=wealth|flow|mobile` and `&theme=pearl|noir`.
 
@@ -28,7 +28,9 @@ Defined once in `packages/config` (Tailwind preset) and consumed by Tailwind (we
 | `text` | `#17140F` | `#F4EFE4` | Primary text |
 | `muted` | text @ 62% | text @ 62% | Secondary text |
 | `faint` | text @ 40% | text @ 36% | Labels, captions |
-| `line` | `rgba(23,20,15,.08)` | `rgba(255,255,255,.07)` | Dividers, outlines |
+| `line` | `rgba(23,20,15,.08)` | `rgba(255,255,255,.08)` | Dividers, outlines |
+| `surface` | `#FFFFFF` | `#282830` | Inputs, chips, active tab (used with opacity, e.g. `bg-surface/70`) |
+| `on-gold` | `#FFFFFF` | `#1D1307` | Text on gold buttons |
 | `gold-1` / `gold-2` | `#C99B5B` / `#7A5226` | `#F8E3B6` / `#C4934F` | Accent gradient (top → bottom) |
 | `positive` | `#0F9E6E` | `#7EF0C3` | Gains, income |
 | `negative` | `#D7553D` | `#FF8F7A` | Losses, overspend |

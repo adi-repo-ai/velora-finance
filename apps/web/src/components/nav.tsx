@@ -33,7 +33,7 @@ export function Nav() {
             aria-current={active ? "page" : undefined}
             className={cn(
               "rounded-full px-4 py-2.5 text-sm text-muted transition hover:text-text",
-              active && "bg-white text-text shadow-[0_6px_18px_rgb(80_60_30/.15)]",
+              active && "bg-surface text-text shadow-[0_6px_18px_rgb(80_60_30/.15)]",
             )}
           >
             {label}

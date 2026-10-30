@@ -36,7 +36,7 @@ export default function Bills() {
           const due = new Date(`${b.next_due_on}T00:00:00`);
           return (
             <View key={b.id} className="flex-row items-center gap-3 border-b border-line py-3.5 last:border-b-0">
-              <View className={d <= 3 ? 'h-12 w-12 items-center justify-center rounded-2xl border-[1.5px] border-gold-1 bg-white/70' : 'h-12 w-12 items-center justify-center rounded-2xl bg-white/70'}>
+              <View className={d <= 3 ? 'h-12 w-12 items-center justify-center rounded-2xl border-[1.5px] border-gold-1 bg-surface/70' : 'h-12 w-12 items-center justify-center rounded-2xl bg-surface/70'}>
                 <T className="font-serif text-[20px] leading-[22px]">{due.getDate()}</T>
                 <T className="font-mono text-[9px] uppercase text-faint">{due.toLocaleString('en', { month: 'short' })}</T>
               </View>

@@ -56,7 +56,7 @@ export default function SignUpPage() {
           {([["US", "🇺🇸 United States", "USD"], ["IN", "🇮🇳 India", "INR"]] as const).map(([c, label, cur]) => (
             <button
               type="button" role="radio" aria-checked={country === c} key={c} onClick={() => setCountry(c)}
-              className={cn("rounded-2xl border border-line bg-white/50 px-4 py-3 text-left text-sm transition", country === c && "border-gold-1 bg-white shadow-[0_0_0_3px_rgb(201_155_91/.2)]")}
+              className={cn("rounded-2xl border border-line bg-surface/50 px-4 py-3 text-left text-sm transition", country === c && "border-gold-1 bg-surface shadow-[0_0_0_3px_rgb(201_155_91/.2)]")}
             >
               {label}<span className="block font-mono text-[11px] text-faint">{cur}</span>
             </button>

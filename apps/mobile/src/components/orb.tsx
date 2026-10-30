@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
-import { View } from 'react-native';
+import { useColorScheme, View } from 'react-native';
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withTiming } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 
@@ -33,6 +33,7 @@ function Wave({ size, amp, phase, duration, reverse, fill, opacity }: { size: nu
 /** Glass sphere filled with sloshing liquid gold. `pct` is 0–1. */
 export function Orb({ size, pct, children }: { size: number; pct: number; children?: ReactNode }) {
   const fill = Math.min(Math.max(pct, 0), 1);
+  const dark = useColorScheme() === 'dark';
   const level = useSharedValue(0);
   useEffect(() => {
     level.value = withDelay(300, withTiming(fill, { duration: 2400, easing: Easing.out(Easing.exp), reduceMotion: ReduceMotion.System }));
@@ -43,7 +44,7 @@ export function Orb({ size, pct, children }: { size: number; pct: number; childr
       accessible
       accessibilityRole="image"
       accessibilityLabel={`${Math.round(fill * 100)}% saved`}
-      style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.55)', borderWidth: 1, borderColor: '#fff', shadowColor: '#aa783c', shadowOpacity: 0.35, shadowRadius: 30, shadowOffset: { width: 0, height: 18 } }}
+      style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', backgroundColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.55)', borderWidth: 1, borderColor: dark ? 'rgba(255,255,255,0.18)' : '#fff', shadowColor: '#aa783c', shadowOpacity: 0.35, shadowRadius: 30, shadowOffset: { width: 0, height: 18 } }}
     >
       <Animated.View style={[{ position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'visible' }, liquid]}>
         <Wave size={size} amp={7} phase={1.6} duration={8000} reverse fill="#c4934f" opacity={0.5} />

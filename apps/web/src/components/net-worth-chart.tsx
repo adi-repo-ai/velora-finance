@@ -19,8 +19,8 @@ export function NetWorthChart({ data, currency }: { data: { month: string; net_w
             <stop offset="1" stopColor="#c99b5b" />
           </linearGradient>
         </defs>
-        <CartesianGrid vertical={false} stroke="rgb(23 20 15 / .08)" strokeDasharray="2 6" />
-        <XAxis dataKey="month" tickFormatter={monthLabel} tickLine={false} axisLine={false} tick={{ fontSize: 10, fontFamily: "var(--font-geist-mono)", fill: "rgb(23 20 15 / .4)", letterSpacing: 1.5 }} />
+        <CartesianGrid vertical={false} stroke="currentColor" strokeOpacity={0.08} strokeDasharray="2 6" />
+        <XAxis dataKey="month" tickFormatter={monthLabel} tickLine={false} axisLine={false} tick={{ fontSize: 10, fontFamily: "var(--font-geist-mono)", fill: "currentColor", fillOpacity: 0.4, letterSpacing: 1.5 }} />
         <YAxis hide domain={["dataMin", "dataMax"]} />
         <Tooltip
           cursor={{ stroke: "rgb(201 155 91 / .5)", strokeDasharray: "3 4" }}

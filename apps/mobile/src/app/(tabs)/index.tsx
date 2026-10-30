@@ -26,7 +26,7 @@ export default function Home() {
           <T className="font-serif text-[30px] leading-[34px]">{profile?.display_name || ' '}</T>
         </View>
         <View>
-          <Pressable accessibilityRole="button" accessibilityLabel="Sign out" onPress={signOutDevice} className="h-11 items-center justify-center rounded-full border border-white bg-white/60 px-4">
+          <Pressable accessibilityRole="button" accessibilityLabel="Sign out" onPress={signOutDevice} className="h-11 items-center justify-center rounded-full border border-glass-edge bg-surface/60 px-4">
             <T className="text-[13px]">Sign out</T>
           </Pressable>
         </View>
@@ -79,7 +79,7 @@ export default function Home() {
             {txns.length === 0 && <T className="border-t border-line py-4 text-[14px] text-muted">No transactions this month yet. Tap + to add one.</T>}
             {txns.slice(0, 6).map((t) => (
               <View key={t.id} className="flex-row items-center gap-3 border-t border-line py-3">
-                <View className="h-10 w-10 items-center justify-center rounded-2xl bg-white/70"><T className="text-[18px]">{t.category?.icon ?? '•'}</T></View>
+                <View className="h-10 w-10 items-center justify-center rounded-2xl bg-surface/70"><T className="text-[18px]">{t.category?.icon ?? '•'}</T></View>
                 <View className="flex-1">
                   <T numberOfLines={1}>{t.merchant || t.description || t.category?.name || 'Transaction'}</T>
                   <T className="text-[12px] text-faint">{t.category?.name ?? 'Uncategorised'} · {new Date(`${t.posted_on}T00:00:00`).toLocaleDateString('en', { day: 'numeric', month: 'short' })}</T>

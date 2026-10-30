@@ -8,9 +8,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        gold: "bg-gradient-to-b from-gold-1 to-gold-2 text-white shadow-[inset_0_1px_0_rgb(255_255_255/.5),0_14px_30px_-12px_rgb(122_82_38/.7)] hover:shadow-[inset_0_1px_0_rgb(255_255_255/.5),0_18px_36px_-12px_rgb(122_82_38/.8)]",
-        glass: "bg-white/70 text-text shadow-[0_6px_18px_rgb(80_60_30/.12),inset_0_1px_0_#fff] hover:bg-white",
-        ghost: "text-muted hover:text-text hover:bg-white/50",
+        gold: "bg-gradient-to-b from-gold-1 to-gold-2 text-on-gold shadow-[inset_0_1px_0_rgb(255_255_255/.5),0_14px_30px_-12px_rgb(122_82_38/.7)] hover:shadow-[inset_0_1px_0_rgb(255_255_255/.5),0_18px_36px_-12px_rgb(122_82_38/.8)]",
+        glass: "bg-surface/70 text-text shadow-[0_6px_18px_rgb(80_60_30/.12),inset_0_1px_0_#fff] hover:bg-surface",
+        ghost: "text-muted hover:text-text hover:bg-surface/50",
         danger: "text-negative hover:bg-negative/10",
       },
       size: { sm: "h-8 px-3.5 text-[13px]", md: "h-10 px-5 text-sm", lg: "h-14 px-7 text-base", icon: "size-9" },

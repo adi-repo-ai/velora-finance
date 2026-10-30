@@ -39,7 +39,7 @@ export default function ActivityPage() {
             <ul className="mt-1">
               {rows.map((t) => (
                 <li key={t.id} className="group flex items-center gap-4 border-b border-line py-3">
-                  <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-white/60 text-lg shadow-[inset_0_0_0_1px_rgb(23_20_15/.06)]" aria-hidden>{t.category?.icon ?? "•"}</span>
+                  <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-surface/60 text-lg shadow-[inset_0_0_0_1px_rgb(23_20_15/.06)]" aria-hidden>{t.category?.icon ?? "•"}</span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate">{t.merchant || t.description || t.category?.name || "Transaction"}</p>
                     <p className="text-xs text-faint">{t.category?.name ?? "Uncategorised"} · {t.account?.name}{t.source === "import" && " · imported"}</p>
@@ -92,7 +92,7 @@ function AddTransactionDialog() {
           <form onSubmit={submit} className="grid gap-4" noValidate onChange={clearErrorOnEdit(setErrors)}>
             <div role="radiogroup" aria-label="Type" className="flex rounded-2xl bg-text/[.06] p-1 text-sm font-semibold">
               {(["expense", "income"] as const).map((k) => (
-                <button type="button" role="radio" aria-checked={kind === k} key={k} onClick={() => setKind(k)} className={cn("flex-1 rounded-xl py-2 capitalize text-muted", kind === k && "bg-white text-text shadow")}>{k}</button>
+                <button type="button" role="radio" aria-checked={kind === k} key={k} onClick={() => setKind(k)} className={cn("flex-1 rounded-xl py-2 capitalize text-muted", kind === k && "bg-surface text-text shadow")}>{k}</button>
               ))}
             </div>
             <Field id="amount" label={`Amount (${currency})`} error={errors.amount}>
@@ -154,7 +154,7 @@ function ImportDialog() {
           <Input id="file" type="file" accept=".csv,text/csv" className="pt-2.5" onChange={(e) => onFile(e.target.files?.[0])} />
         </Field>
         {preview && (
-          <div className="rounded-2xl bg-white/50 p-4 text-sm">
+          <div className="rounded-2xl bg-surface/50 p-4 text-sm">
             <p><b>{preview.rows.length}</b> transactions ready{preview.errors.length > 0 && <>, <span className="text-negative">{preview.errors.length} skipped</span></>}</p>
             {preview.errors.slice(0, 3).map((e) => <p key={e.line} className="mt-1 text-xs text-negative">Line {e.line}: {e.reason}</p>)}
           </div>
