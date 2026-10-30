@@ -2,6 +2,8 @@
 
 Personal all-in-one finance app for web, iOS and Android. Launch markets: **USA** and **India**.
 
+> **This is the target architecture.** For what is built today and how it works end to end, read [`HOW-IT-WORKS.md`](HOW-IT-WORKS.md) — its last section lists what here is still planned.
+
 ## 1. Technology stack (final)
 
 | Layer | Technology | Purpose |
@@ -11,12 +13,12 @@ Personal all-in-one finance app for web, iOS and Android. Launch markets: **USA*
 | Mobile | React Native + Expo | Android and iOS |
 | Styling | NativeWind + Tailwind CSS | Consistent styling |
 | UI components | shadcn/ui + custom components | Web component library |
-| Mobile UI | React Native Paper / custom components | Native UI |
+| Mobile UI | Custom components (React Native Paper not needed so far) | Native UI |
 | Monorepo | Turborepo + pnpm | Shared codebase |
 | Backend | Supabase | Backend platform |
 | Database | PostgreSQL | Financial records |
 | Authentication | Supabase Auth | Login and authorization |
-| ORM | Prisma (optional) | Database access — see §8 |
+| ORM | Not used — supabase-js + generated types (see §8) | Database access |
 | Validation | Zod | Form and API validation |
 | File storage | Supabase Storage | Receipts and attachments |
 | Server functions | Supabase Edge Functions | Backend operations |
@@ -30,14 +32,14 @@ Personal all-in-one finance app for web, iOS and Android. Launch markets: **USA*
 | Source control | GitHub | Repository management |
 | CI/CD | GitHub Actions | Automated testing |
 
-UI design system (Pearl / Noir, liquid glass, motion): see [`docs/design/DESIGN.md`](design/DESIGN.md).
+UI design system (Pearl, liquid glass, motion): see [`docs/design/DESIGN.md`](design/DESIGN.md).
 
 ## 2. System overview
 
 ```
 ┌────────────────────────┐        ┌─────────────────────────────┐
 │ Web — Next.js (Netlify)│        │ Mobile — Expo RN (EAS)      │
-│ shadcn/ui · Tailwind   │        │ RN Paper · NativeWind       │
+│ shadcn/ui · Tailwind   │        │ NativeWind · glass Dock     │
 │ Recharts               │        │ Victory Native · SecureStore│
 └───────────┬────────────┘        └──────────────┬──────────────┘
             │   shared: @velora/core · @velora/schemas · @velora/data
@@ -66,19 +68,19 @@ UI design system (Pearl / Noir, liquid glass, motion): see [`docs/design/DESIGN.
 ```
 apps/
   web/              Next.js (App Router), @supabase/ssr, shadcn/ui
-  mobile/           Expo (expo-router), NativeWind, RN Paper
+  mobile/           Expo (expo-router), NativeWind, custom floating Dock
 packages/
   core/             money math, currency formatting, budget/recurring logic (pure TS, unit-tested)
   schemas/          Zod schemas + Supabase-generated DB types
   data/             supabase client factory + TanStack Query hooks (shared by web & mobile)
-  config/           tsconfig, eslint, shared Tailwind preset (used by Tailwind and NativeWind)
+  config/           Pearl design tokens (tokens.json → web CSS variables + NativeWind colours)
 supabase/
   migrations/       SQL migrations (source of truth for schema + RLS)
   functions/        Edge Functions
-  seed.sql
+  tests/            RLS and report tests
 ```
 
-UI components are **not** shared across platforms (shadcn is web-only, RN Paper is native-only). What is shared: types, validation, business logic, data hooks and design tokens.
+UI components are **not** shared across platforms (shadcn-style components on web, custom React Native components on mobile). What is shared: types, validation, business logic, data hooks and design tokens.
 
 ## 4. Region strategy: USA + India
 
@@ -98,7 +100,7 @@ UI components are **not** shared across platforms (shadcn is web-only, RN Paper 
 
 **User model:** every user has a `home_country` (`US`/`IN`) and `base_currency`. All account types and providers are tagged by country, so the UI shows only relevant options.
 
-## 5. Data model (core tables)
+## 5. Data model (target; built subset in HOW-IT-WORKS.md §6)
 
 All amounts are stored as **`bigint` minor units** (cents / paise) plus an ISO-4217 `currency`. Never use floats.
 
@@ -160,14 +162,14 @@ Reports (cash flow, category spend, net-worth trend) are SQL views or RPC functi
 ## 8. Decisions and recommendations
 
 - **Prisma: skip it for app data access.** Prisma connects as a privileged Postgres role and bypasses RLS, so you would have to re-implement authorisation by hand. Use supabase-js with generated types (`supabase gen types typescript`), and keep SQL migrations in `supabase/migrations`. If Prisma is ever added, limit it to admin or scripts.
-- **Mobile UI:** use NativeWind for layout and styling, and React Native Paper only for complex widgets (dialogs, menus, date pickers). Map Paper's theme to the shared Tailwind tokens so there is one source of colour.
+- **Mobile UI:** NativeWind for all styling with custom components and a floating glass Dock for navigation (same look on iOS and Android). Add React Native Paper only if a complex widget (date picker, menus) needs it, themed from the shared tokens.
 - **Charts:** both Recharts and Victory Native read the same series shape, produced by RPCs and typed in `@velora/schemas`.
 - **Offline (mobile):** TanStack Query persisted cache plus optimistic mutations for manual entries. Defer a full offline database until it is needed.
 - **Netlify:** deploy Next.js with the Netlify Next.js runtime; use `@supabase/ssr` for cookie-based sessions and middleware auth.
 
 ## 9. CI/CD (GitHub Actions)
 
-- **PR:** `pnpm install` → `turbo run lint typecheck test` (affected packages only) → `supabase db lint` plus migrations applied against a local Supabase in CI → RLS check.
+- **PR (built):** `pnpm install` → typecheck, lint, tests → web build → mobile iOS/Android bundle → migrations + RLS tests on Postgres.
 - **Main:** Netlify deploys web automatically; `supabase db push` and `supabase functions deploy` for production; EAS Update (OTA) for JS-only mobile changes, and an EAS Build plus store submission for native changes.
 - **Environments:** `dev` (local Supabase via CLI), `staging` and `prod` Supabase projects, Plaid Sandbox → Development → Production.
 

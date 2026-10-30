@@ -1,7 +1,7 @@
 # Velora Design System — "Pearl" (light) / "Noir" (dark)
 
 Private-bank feel: warm pearl surfaces, champagne-gold accents, editorial serif numerals, liquid-glass panels, and calm, physical motion.
-**Pearl is the default theme**; Noir is its dark mode (follows the OS setting, user-overridable).
+**The app ships Pearl only** (chosen 30 Oct 2026). Noir is kept below as an explored dark variant; tokens for it are not implemented.
 
 Live reference: open [`mockup.html`](./mockup.html) in Chrome — `?view=wealth|flow|mobile` and `&theme=pearl|noir`.
 

@@ -1,0 +1,27 @@
+{
+  "name": "@velora/data",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@velora/core": "workspace:*",
+    "@velora/schemas": "workspace:*"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": "^2",
+    "@tanstack/react-query": "^5",
+    "react": ">=19"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "@tanstack/react-query": "^5.105.0",
+    "@types/react": "^19",
+    "react": "19.3.0"
+  }
+}

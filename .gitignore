@@ -1,0 +1,10 @@
+node_modules/
+.turbo/
+.env
+.env*.local
+dist/
+.DS_Store
+*.log
+# Supabase local state
+supabase/.temp/
+supabase/.branches/

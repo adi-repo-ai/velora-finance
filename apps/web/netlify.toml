@@ -1,0 +1,7 @@
+# Netlify settings for the web app. In the Netlify UI set "Package directory" to apps/web
+# (base directory = repo root); Netlify's Next.js adapter handles the publish output.
+[build]
+  command = "pnpm turbo run build --filter=@velora/web"
+
+[build.environment]
+  NODE_VERSION = "22"
