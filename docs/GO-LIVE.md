@@ -16,6 +16,32 @@ Everything below is a one-time setup; after it, a push to `main` redeploys the w
 
 You also need Node 22 and pnpm 10 on your computer (`corepack enable` installs pnpm).
 
+## Free-tier plan ($0)
+
+The chosen launch path. It changes four things from the full plan below:
+
+| Area | On the free tier | What to do |
+|---|---|---|
+| **Web app** | Fully live: Supabase Free + Netlify Free | Follow sections 1 and 2 as written |
+| **iPhone users** | No App Store or TestFlight (both need the $99 Apple account); iOS push reminders also need it | iPhone users use the web app in Safari and can tap Share → Add to Home Screen |
+| **Android users** | No Play Store ($25), but the app can be installed directly | Follow section 3 steps 1–5 with the **preview** profile, Android only: `eas build --profile preview --platform android`, then share the install link EAS gives you. Push reminders work (Firebase is free). Users must allow "install unknown apps". |
+| **Sign-up emails** | Supabase's built-in email only sends to your own team's addresses, so strangers can't receive confirmation or password-reset emails | Connect a free SMTP sender in Supabase → Authentication → Emails → SMTP. **Brevo** (300 emails/day) can send from a verified personal address without owning a domain; **Resend** (3,000/month) needs a domain you own. Only as a last resort, turn **Confirm email** off — sign-up then works without email, but password reset still needs SMTP. |
+| **Database pausing** | A free Supabase project pauses after about a week with no activity; while paused, the app and the hourly reminders stop | Open the app (or the Supabase dashboard) at least weekly, and click **Restore** in the dashboard if it pauses. Data is kept while paused. |
+
+Free-tier limits worth knowing:
+
+| Service | Free limit |
+|---|---|
+| Supabase | 500 MB database, 50,000 monthly active users, 2 active projects, no automatic backups |
+| Netlify | 300 build minutes and 100 GB bandwidth per month |
+| Expo EAS | about 30 builds per month, slower build queue |
+| GitHub Actions | free for public repos; 2,000 minutes/month for private ones |
+| Sentry | 5,000 errors per month |
+
+Because the free tier has **no backups**, export your data now and then: Supabase dashboard → Database → Backups is Pro-only, so use `npx supabase db dump --data-only > backup.sql` from your computer.
+
+Upgrade path: when you have regular users, move Supabase to Pro first (no pausing, daily backups), then add the Apple and Google accounts to publish to the stores (section 3 step 6 and section 4).
+
 ---
 
 ## 1. Supabase (backend)
