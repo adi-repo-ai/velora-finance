@@ -30,6 +30,8 @@ Personal all-in-one finance app for web, iOS and Android. Launch markets: **USA*
 | Source control | GitHub | Repository management |
 | CI/CD | GitHub Actions | Automated testing |
 
+UI design system (Pearl / Noir, liquid glass, motion): see [`docs/design/DESIGN.md`](design/DESIGN.md).
+
 ## 2. System overview
 
 ```
