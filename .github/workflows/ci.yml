@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, staging]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      - name: Build web
+        run: pnpm turbo run build --filter=@velora/web
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder
+      - name: Bundle mobile (iOS + Android)
+        working-directory: apps/mobile
+        run: npx expo export --platform ios --platform android --output-dir /tmp/expo-export
+        env:
+          EXPO_OFFLINE: 1
+          EXPO_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder
+
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply migrations and run RLS tests
+        run: |
+          psql -v ON_ERROR_STOP=1 -c "create database velora"
+          psql -v ON_ERROR_STOP=1 -d velora -f supabase/tests/auth_stub.sql
+          # The cron migration needs pg_cron/pg_net, which only exist on Supabase.
+          psql -v ON_ERROR_STOP=1 -d velora -f supabase/migrations/20261030000000_init.sql
+          psql -v ON_ERROR_STOP=1 -d velora -f supabase/tests/rls.test.sql

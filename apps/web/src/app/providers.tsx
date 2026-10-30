@@ -1,0 +1,15 @@
+"use client";
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { VeloraDataProvider } from "@velora/data";
+import { useState, type ReactNode } from "react";
+import { getSupabase } from "@/lib/supabase/client";
+
+export function Providers({ children }: { children: ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: 1 } } }));
+  return (
+    <QueryClientProvider client={queryClient}>
+      <VeloraDataProvider client={getSupabase()}>{children}</VeloraDataProvider>
+    </QueryClientProvider>
+  );
+}

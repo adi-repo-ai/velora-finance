@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Metro (React Native) resolves modules most reliably from a flat node_modules.
+nodeLinker: hoisted
+
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver
