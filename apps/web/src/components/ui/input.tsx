@@ -1,11 +1,19 @@
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export const fieldClass =
   "h-11 w-full rounded-2xl border border-line bg-surface/70 px-4 text-[15px] text-text placeholder:text-faint shadow-[inset_0_1px_2px_rgb(80_60_30/.06)] outline-none transition focus:border-gold-1 focus:bg-surface focus:ring-4 focus:ring-gold-1/20 aria-invalid:border-negative";
 
-export function Input({ className, ...props }: ComponentProps<"input">) {
-  return <input data-slot="input" className={cn(fieldClass, className)} {...props} />;
+/** `icon` shows a small leading icon inside the field. */
+export function Input({ className, icon, ...props }: ComponentProps<"input"> & { icon?: ReactNode }) {
+  const input = <input data-slot="input" className={cn(fieldClass, icon && "pl-11", className)} {...props} />;
+  if (!icon) return input;
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted [&_svg]:size-[18px]" aria-hidden>{icon}</span>
+      {input}
+    </div>
+  );
 }
 
 export function Select({ className, ...props }: ComponentProps<"select">) {

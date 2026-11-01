@@ -87,6 +87,7 @@ function Noticed({ month }: { month: string }) {
   const { data: lines = [] } = useBudget(month);
   const { data: s } = useMonthSummary(month);
   const { data: bills = [] } = useBills();
+  const [showAll, setShowAll] = useState(false);
   const [soonCutoff] = useState(() => new Date(Date.now() + 3 * 86_400_000).toISOString().slice(0, 10));
   const notes: [string, string][] = [];
   for (const l of lines) {
@@ -105,13 +106,14 @@ function Noticed({ month }: { month: string }) {
       </h2>
       <ul className="mt-4">
         {notes.length === 0 && <li className="border-t border-line py-4 text-sm text-muted">All calm. Nothing needs your attention right now.</li>}
-        {notes.slice(0, 4).map(([b, rest]) => (
+        {(showAll ? notes : notes.slice(0, 4)).map(([b, rest]) => (
           <li key={b} className="flex gap-3.5 border-t border-line py-3.5 text-sm leading-relaxed text-muted">
             <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-gold-1/15 text-gold-2" aria-hidden>✦</span>
             <span><b className="font-semibold text-text">{b}</b> {rest}</span>
           </li>
         ))}
       </ul>
+      {notes.length > 4 && <button type="button" onClick={() => setShowAll(!showAll)} className="mt-2 text-sm font-medium text-gold-2 hover:underline">{showAll ? "Show less" : `See all ${notes.length}`}</button>}
     </section>
   );
 }

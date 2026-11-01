@@ -84,3 +84,76 @@ describe('budget', () => {
     expect(safeToSpendToday({ remainingBudget: 1000, billsDue: 2000, today })).toBe(0);
   });
 });
+
+import { domainFromInput, monthlyCost } from './index';
+
+describe('recurring', () => {
+  it('normalises cost to per month', () => {
+    expect(monthlyCost(1200, 'monthly')).toBe(1200);
+    expect(monthlyCost(1200, 'yearly')).toBe(100);
+    expect(monthlyCost(1200, 'weekly')).toBe(5200);
+  });
+  it('cleans website input into a domain', () => {
+    expect(domainFromInput('https://www.Netflix.com/in/')).toBe('netflix.com');
+    expect(domainFromInput('open.spotify.com')).toBe('open.spotify.com');
+    expect(domainFromInput('hotstar.com:443/x?y')).toBe('hotstar.com');
+    expect(domainFromInput('netflix')).toBeNull();
+    expect(domainFromInput('')).toBeNull();
+  });
+});
+
+import { generatePassword, passwordStrength } from './index';
+
+describe('password', () => {
+  it('generates strong passwords with every character class', () => {
+    for (let i = 0; i < 50; i++) {
+      const pw = generatePassword();
+      expect(pw).toHaveLength(16);
+      expect(pw).toMatch(/[A-Z]/);
+      expect(pw).toMatch(/[a-z]/);
+      expect(pw).toMatch(/\d/);
+      expect(pw).toMatch(/[^A-Za-z0-9]/);
+      expect(pw).not.toMatch(/[0O1lI]/);
+    }
+    expect(new Set(Array.from({ length: 20 }, () => generatePassword())).size).toBe(20);
+  });
+
+  it('rates strength', () => {
+    expect(passwordStrength('abc').label).toBe('Too short');
+    expect(passwordStrength('password1').label).toBe('Weak');
+    expect(passwordStrength('aaaaaaaaaaaa').score).toBe(1);
+    expect(passwordStrength('Sunset-river-42').label).toBe('Strong');
+    expect(passwordStrength(generatePassword()).label).toBe('Strong');
+  });
+});
+
+import { cellToString, detectCurrency, guessCategory, importRows } from './index';
+
+describe('import: any statement format', () => {
+  it('reads semicolon CSV with a bank preamble and footer', () => {
+    const csv = 'Account statement;HDFC Bank\nCustomer;Priya\n\nDate;Narration;Withdrawal Amount (INR);Deposit Amount (INR);Closing Balance\n'
+      + '01/11/26;UPI/1/SWIGGY/swiggy@icici;486.00;;₹10,000\n02/11/26;SALARY INFOSYS;;1,85,000.00;₹1,95,000\n;Closing balance;;;₹1,95,000\n';
+    const r = importStatement(csv, { dayFirst: true });
+    expect(r.errors).toEqual([]);
+    expect(r.rows.map((x) => [x.postedOn, x.amount])).toEqual([['2026-11-01', -48600], ['2026-11-02', 18500000]]);
+    expect(r.currency).toBe('INR');
+  });
+  it('uses a Dr/Cr column or suffix to sign a single amount', () => {
+    const r = importStatement('Txn Date\tDescription\tAmount\tDr/Cr\n2026-11-01\tRent\t25000\tDR\n2026-11-02\tRefund\t500\tCR\n2026-11-03\tATM\t2000 Dr\t\n', { dayFirst: true });
+    expect(r.rows.map((x) => x.amount)).toEqual([-2500000, 50000, -200000]);
+  });
+  it('detects currency from symbols and codes', () => {
+    expect(detectCurrency([['Date', 'Amount'], ['1', '$12.00']])).toBe('USD');
+    expect(detectCurrency([['Amount (INR)'], ['Rs. 400']])).toBe('INR');
+    expect(detectCurrency([['Date', 'Amount'], ['1', '12']])).toBeNull();
+  });
+  it('turns Excel cells into importable rows', () => {
+    const rows = [['Date', 'Description', 'Amount'], [new Date(2026, 10, 1), 'Coffee', -4.5], [new Date(2026, 10, 2), 'Paycheck', 2500]].map((r) => r.map(cellToString));
+    expect(importRows(rows, { dayFirst: false }).rows.map((x) => [x.postedOn, x.amount])).toEqual([['2026-11-01', -450], ['2026-11-02', 250000]]);
+  });
+  it('guesses categories from merchant text', () => {
+    expect(guessCategory('UPI/SWIGGY', -100)).toBe('Food & dining');
+    expect(guessCategory('ACME PAYROLL', 100)).toBe('Salary');
+    expect(guessCategory('Mystery shop', -100)).toBeNull();
+  });
+});

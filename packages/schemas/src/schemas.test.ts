@@ -32,3 +32,27 @@ describe('other forms', () => {
     expect(billSchema.safeParse({ ...bill, remindDaysBefore: 60 }).success).toBe(false);
   });
 });
+
+import { passwordChangeSchema } from './index';
+
+describe('subscriptions and settings', () => {
+  const sub = { name: 'Netflix', amount: '649', cadence: 'monthly', nextDueOn: '2026-11-10', kind: 'subscription' } as const;
+  it('normalises the website to a domain and rejects junk', () => {
+    expect(billSchema.parse({ ...sub, website: 'https://www.netflix.com/in/' }).website).toBe('netflix.com');
+    expect(billSchema.parse(sub).website).toBeUndefined();
+    expect(billSchema.safeParse({ ...sub, website: 'not a site' }).success).toBe(false);
+  });
+  it('validates subscription details', () => {
+    expect(billSchema.parse(sub).notify).toBe(true);
+    expect(billSchema.safeParse({ ...sub, category: 'streaming', accountEmail: 'me@example.com', logo: 'data:image/webp;base64,UklGRg==' }).success).toBe(true);
+    expect(billSchema.safeParse({ ...sub, accountEmail: '' }).success).toBe(true);
+    expect(billSchema.safeParse({ ...sub, accountEmail: 'nope' }).success).toBe(false);
+    expect(billSchema.safeParse({ ...sub, category: 'crypto' }).success).toBe(false);
+    expect(billSchema.safeParse({ ...sub, logo: 'data:image/svg+xml;base64,PHN2Zz4=' }).success).toBe(false);
+  });
+  it('requires matching passwords', () => {
+    const r = passwordChangeSchema.safeParse({ password: 'longenough', confirm: 'different' });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(fieldErrors(r.error).confirm).toBe("Passwords don't match");
+  });
+});

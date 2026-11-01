@@ -210,6 +210,28 @@ sequenceDiagram
 
 A phone receives reminders after the user taps **Turn on reminders** on the Bills tab (permission prompt → Expo token → `push_tokens`). If sending fails, the claim is released so the next hourly run retries.
 
+**Bills vs. Subscriptions.** Both live in `recurring_items` and share reminders, autopay roll-forward and **Mark paid / Mark renewed**. A `kind` column (`bill` | `subscription`) splits them into two tabs. Bills are rent, card dues, utilities and loans. Subscriptions add an optional `website`, which shows the company logo. Popular brands (Netflix, Spotify, YouTube, iCloud, Apple, Notion, Swiggy, Zomato and others) use official marks bundled from Simple Icons. Others use the site's own icon via Google's favicon service, with a letter tile as the last fallback, plus monthly and yearly totals (`monthlyCost`: weekly × 52 ÷ 12, yearly ÷ 12). Neither records a transaction. They are what's *coming*, and they feed **Safe to spend** and **Next up**. Removing a subscription only stops tracking it; it doesn't cancel it with the provider.
+
+**Deleting things.** Every delete (transaction, bill, subscription, goal, bank account, your whole account) opens a styled confirm popup (`ConfirmDialog`), not the browser's `confirm()`. Deleting a bank account also deletes its transactions (database cascade). **Delete my account** asks you to type `DELETE`, then calls `delete_my_account()`. That function removes your auth user, and every table cascades from it.
+
+**Accounts & settings (`/accounts`).** Profile (name, country/currency), bank accounts, sign-in & security (change email with a confirmation link, change password, connected sign-in methods), preferences, help/FAQ, sign out, and delete account.
+
+**Passwords.** Every password field has a show/hide eye. Sign-up and change-password add **Suggest strong password** (16 characters from the browser's secure random generator, every character class, no look-alike characters) and a strength meter.
+
+**Social sign-in.** Buttons from `NEXT_PUBLIC_AUTH_PROVIDERS` call `signInWithOAuth`. The provider sends the user back through Supabase to `/auth/callback`, which swaps the code for a session cookie, the same way email links work. New users get their name from the provider profile.
+
+**Import (web).** Accepts Excel `.xlsx` (first sheet), CSV, TSV and semicolon-separated files. It finds the header row even below a bank's preamble and skips footer rows like "Closing balance". It understands a signed `Amount`, `Amount` + `Dr/Cr`, or separate `Withdrawal`/`Deposit` columns. It detects ₹/INR/Rs vs $/USD and only imports into an account of the matching currency (you can override the currency). Before anything is saved you review every row: untick rows, rename them, and change the guessed category.
+
+**Subscriptions in depth.** Each subscription can have a category (Streaming, Music, Cloud, Software, AI tools…), a description, the billing email it's under, an uploaded logo, an auto-renew status and a reminders switch. The page groups subscriptions by category with subtotals, filters by category or status (renewing this week, overdue, auto-renew off, reminders off), shows a spending-by-category overview, and lists the next 30 days of renewals with **See all**. Uploaded logos are redrawn in the browser to a 128×128 WebP, so only plain pixels are stored, and the database rejects anything that isn't PNG, JPG or WebP.
+
+**Reminders.** The hourly function sends phone pushes `remind_days_before` days ahead. For subscriptions it also sends an email at least 7 days ahead (when Brevo is configured). Push and email are logged separately in `notifications_log`, so neither is ever sent twice. The 🔔 in the top bar lists everything overdue or due within 7 days.
+
+**Sessions.** Sign-in uses Supabase's secure cookies. On top of that, `SessionGuard` signs you out after 30 minutes without activity, with a 2-minute "Still there?" warning; activity in any tab counts. With **Remember me** the limit is 30 days. Without it you're also signed out when the browser closes. **Forgot password?** emails a one-time link to `/reset-password`. Saving a new password signs out every device.
+
+**Security headers.** Every page is sent with a Content-Security-Policy (only this site, Supabase, and Google favicons for logos), HSTS, `X-Frame-Options: DENY`, `nosniff`, a strict referrer policy and a Permissions-Policy that blocks the camera, microphone and location. A cookie notice explains that only essential cookies are used.
+
+**Footer and legal pages.** Signed-in pages end with a footer: brand, product, account and legal links, the support email, and ©. Sign-in pages show a compact version. `/privacy` and `/terms` are public. Review their wording before launch.
+
 **Insights ("Velora noticed", web Flow page).** Simple rules over your own data: budgets near or over limit, the category leading your spending, bills due within three days.
 
 ## 8. How the screens are built
@@ -247,6 +269,8 @@ A phone receives reminders after the user taps **Turn on reminders** on the Bill
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | web | API endpoint + public key |
 | `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | mobile | same |
 | `NEXT_PUBLIC_SENTRY_DSN`, `EXPO_PUBLIC_SENTRY_DSN` | both | optional error tracking |
+| `NEXT_PUBLIC_AUTH_PROVIDERS` | web | social sign-in buttons, e.g. `google,github` (default `google`) |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | web | optional "Contact support" button |
 | `CRON_SECRET`, `EXPO_ACCESS_TOKEN` | reminders function | cron auth; optional Expo push auth |
 | Vault: `project_url`, `cron_secret` | database | used by the hourly cron call |
 
@@ -259,7 +283,8 @@ Setup and deploy steps: [`README.md`](../README.md).
 | Bank data | manual entry + CSV import | Plaid (US); Account Aggregator via a regulated partner (India) |
 | Currencies | one base currency per user | FX conversion across USD/INR accounts |
 | Investments | investment accounts as balances | holdings, prices, CAS import for Indian mutual funds |
-| Sign-in | email + password | Google, Apple, phone OTP (India), MFA |
+| Sign-in | email + password; Google/GitHub/Microsoft on web | social sign-in on mobile, phone OTP (India), MFA |
 | Files | — | receipts and statements in Supabase Storage |
 | Mobile editing | add transactions/accounts, contribute to goals | also create budgets, goals, bills |
-| Account management | add | edit, archive, delete; data export; account deletion |
+| Account management | add, delete; edit profile; change email/password; delete account (web) | edit/archive accounts; data export; same on mobile |
+| Subscriptions | separate web tab with logos and totals | mobile tab |

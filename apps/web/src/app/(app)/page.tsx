@@ -103,7 +103,7 @@ function Vault() {
             {accounts.length} {accounts.length === 1 ? "account" : "accounts"}, <em className="text-gold-2">one view.</em>
           </h2>
         </div>
-        <Button variant="glass" size="sm" asChild><Link href="/accounts">Manage</Link></Button>
+        <Button variant="glass" size="sm" asChild><Link href="/accounts#accounts">{accounts.length > 3 ? `See all ${accounts.length}` : "Manage"}</Link></Button>
       </div>
       <div className="relative flex-1 [perspective:1500px]" aria-hidden>
         <div className="absolute left-1/2 top-[60%] h-28 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,rgb(90_60_20/.3),transparent)] blur-xl" />
@@ -146,6 +146,7 @@ function GoalTile() {
         <p className="label-mono">{g.emoji} {g.name}</p>
         <p className="mt-2 font-serif text-4xl">{formatCompact(g.saved_amount, g.currency)}</p>
         <p className="mt-1 text-[13px] text-muted">of {formatMoney(g.target_amount, g.currency)}</p>
+        <Link href="/goals" className="mt-3 inline-block text-sm font-medium text-gold-2 hover:underline">{goals.length > 1 ? `See all ${goals.length} goals →` : "Open goals →"}</Link>
       </div>
     </Tile>
   );
@@ -186,7 +187,7 @@ function NextBillTile() {
       <p className="label-mono">Next up · {days <= 0 ? "due today" : `in ${days} day${days === 1 ? "" : "s"}`}</p>
       <p className="mt-2 font-serif text-5xl leading-none">{whole}<em className="text-2xl text-gold-2">{cents}</em></p>
       <p className="mt-2 text-sm">{b.name}</p>
-      <div className="mt-auto flex justify-between pt-4 label-mono"><span>{b.autopay ? "Autopay on" : "Manual"}</span><Link href="/bills" className="hover:text-text">{bills.length} bills →</Link></div>
+      <div className="mt-auto flex justify-between pt-4 label-mono"><span>{b.autopay ? "Autopay on" : "Manual"}</span><Link href="/bills" className="hover:text-text">See all {bills.length} →</Link></div>
     </Tile>
   );
 }
