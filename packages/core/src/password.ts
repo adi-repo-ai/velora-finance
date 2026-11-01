@@ -2,7 +2,9 @@
 const SETS = ['ABCDEFGHJKLMNPQRSTUVWXYZ', 'abcdefghijkmnopqrstuvwxyz', '23456789', '!@#$%^&*-_=+?'];
 
 /** Uniform random int in [0, n) from a CSPRNG, without modulo bias. */
-function randomInt(n: number, fill: (a: Uint32Array) => Uint32Array): number {
+type Fill = (a: Uint32Array<ArrayBuffer>) => unknown;
+
+function randomInt(n: number, fill: Fill): number {
   const limit = Math.floor(0x1_0000_0000 / n) * n;
   const buf = new Uint32Array(1);
   do fill(buf); while (buf[0]! >= limit);
@@ -10,7 +12,7 @@ function randomInt(n: number, fill: (a: Uint32Array) => Uint32Array): number {
 }
 
 /** Random password with at least one upper, lower, digit and symbol. */
-export function generatePassword(length = 16, fill: (a: Uint32Array) => Uint32Array = (a) => globalThis.crypto.getRandomValues(a)): string {
+export function generatePassword(length = 16, fill: Fill = (a) => globalThis.crypto.getRandomValues(a)): string {
   const all = SETS.join('');
   const chars = SETS.map((s) => s[randomInt(s.length, fill)]!);
   while (chars.length < length) chars.push(all[randomInt(all.length, fill)]!);
