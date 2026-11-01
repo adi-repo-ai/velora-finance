@@ -8,3 +8,8 @@
   # The Supabase URL and publishable key are meant to ship in the browser bundle (data is
   # protected by row-level security), so Netlify's secret scanner must not block on them.
   SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
+
+# Pin Netlify's Next.js runtime explicitly; auto-detection is unreliable in monorepos, and without
+# the runtime the site deploys as plain files and every page returns "Page not found".
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
