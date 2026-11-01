@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { Footer } from "@/components/footer";
 import { Nav } from "@/components/nav";
 import { Skeleton } from "@/components/states";
 
@@ -10,6 +11,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         {/* Pages depend on today's date, so they render per request rather than at build time. */}
         <Suspense fallback={<Skeleton className="h-[460px] w-full rounded-[30px]" />}>{children}</Suspense>
       </main>
+      <div className="mt-auto"><Footer /></div>
     </div>
   );
 }

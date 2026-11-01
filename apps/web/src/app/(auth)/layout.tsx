@@ -1,3 +1,5 @@
+import { Footer } from "@/components/footer";
+
 export default function AuthLayout({ children }: LayoutProps<"/">) {
   return (
     <main className="grid min-h-screen place-items-center px-4 py-10">
@@ -8,6 +10,7 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
           <p className="mt-2 text-sm text-muted">Your money, all in one place.</p>
         </div>
         {children}
+        <Footer compact />
       </div>
     </main>
   );

@@ -210,7 +210,7 @@ sequenceDiagram
 
 A phone receives reminders after the user taps **Turn on reminders** on the Bills tab (permission prompt → Expo token → `push_tokens`). If sending fails, the claim is released so the next hourly run retries.
 
-**Bills vs. Subscriptions.** Both live in `recurring_items` and share reminders, autopay roll-forward and **Mark paid / Mark renewed**. A `kind` column (`bill` | `subscription`) splits them into two tabs. Bills are rent, card dues, utilities and loans. Subscriptions add an optional `website`, which shows the company logo (from the site's icon via Google's favicon service, with a letter tile as fallback), plus monthly and yearly totals (`monthlyCost`: weekly × 52 ÷ 12, yearly ÷ 12). Neither records a transaction. They are what's *coming*, and they feed **Safe to spend** and **Next up**. Removing a subscription only stops tracking it; it doesn't cancel it with the provider.
+**Bills vs. Subscriptions.** Both live in `recurring_items` and share reminders, autopay roll-forward and **Mark paid / Mark renewed**. A `kind` column (`bill` | `subscription`) splits them into two tabs. Bills are rent, card dues, utilities and loans. Subscriptions add an optional `website`, which shows the company logo. Popular brands (Netflix, Spotify, YouTube, iCloud, Apple, Notion, Swiggy, Zomato and others) use official marks bundled from Simple Icons. Others use the site's own icon via Google's favicon service, with a letter tile as the last fallback, plus monthly and yearly totals (`monthlyCost`: weekly × 52 ÷ 12, yearly ÷ 12). Neither records a transaction. They are what's *coming*, and they feed **Safe to spend** and **Next up**. Removing a subscription only stops tracking it; it doesn't cancel it with the provider.
 
 **Deleting things.** Every delete (transaction, bill, subscription, goal, bank account, your whole account) opens a styled confirm popup (`ConfirmDialog`), not the browser's `confirm()`. Deleting a bank account also deletes its transactions (database cascade). **Delete my account** asks you to type `DELETE`, then calls `delete_my_account()`. That function removes your auth user, and every table cascades from it.
 
@@ -219,6 +219,8 @@ A phone receives reminders after the user taps **Turn on reminders** on the Bill
 **Passwords.** Every password field has a show/hide eye. Sign-up and change-password add **Suggest strong password** (16 characters from the browser's secure random generator, every character class, no look-alike characters) and a strength meter.
 
 **Social sign-in.** Buttons from `NEXT_PUBLIC_AUTH_PROVIDERS` call `signInWithOAuth`. The provider sends the user back through Supabase to `/auth/callback`, which swaps the code for a session cookie, the same way email links work. New users get their name from the provider profile.
+
+**Footer and legal pages.** Signed-in pages end with a footer: brand, product, account and legal links, the support email, and ©. Sign-in pages show a compact version. `/privacy` and `/terms` are public. Review their wording before launch.
 
 **Insights ("Velora noticed", web Flow page).** Simple rules over your own data: budgets near or over limit, the category leading your spending, bills due within three days.
 

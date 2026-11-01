@@ -143,7 +143,7 @@ function AddSubscriptionDialog() {
                 type="button" key={n} onClick={() => pick(n, w)} aria-pressed={name === n}
                 className={cn("flex items-center gap-2 rounded-full bg-surface/60 py-1 pl-1 pr-3 text-sm shadow-[inset_0_0_0_1px_rgb(23_20_15/.06)] hover:bg-surface", name === n && "bg-surface shadow-[inset_0_0_0_1.5px_rgb(201_155_91)]")}
               >
-                <BrandLogo name={n} domain={w} className="size-6 rounded-full [&_img]:size-4" />{n}
+                <BrandLogo name={n} domain={w} className="size-6 rounded-full" />{n}
               </button>
             ))}
           </div>
