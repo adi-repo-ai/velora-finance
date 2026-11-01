@@ -1,5 +1,7 @@
 # Going live
 
+> Prefer clicking to typing commands? [`SETUP.md`](SETUP.md) does the same Supabase, Netlify and sign-in setup entirely in the browser, with an explanation of each step.
+
 Order matters: **Supabase first** (the web and mobile apps need its URL and key), then **web**, then **mobile**.
 Everything below is a one-time setup; after it, a push to `main` redeploys the web app automatically.
 
