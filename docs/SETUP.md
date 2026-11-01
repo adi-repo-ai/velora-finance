@@ -175,7 +175,7 @@ sequenceDiagram
 
 1. **Authentication → URL Configuration**
    - Site URL: that environment's website (production → `https://<site>.netlify.app`, staging → `https://staging--<site>.netlify.app`).
-   - Redirect URLs: add `https://<that site>/auth/callback` and `velora://**`.
+   - Redirect URLs: add `https://<that site>/auth/callback**` (the `**` lets the password-reset link carry `?next=/reset-password`) and `velora://**`.
 2. **Email sending (Brevo, free):** in Brevo create an **SMTP key**; in Supabase → **Authentication → Emails → SMTP Settings** enter Brevo's host, port, login and that key, and your verified sender address.
 
 3. **Social sign-in (4c). Google is free.**
@@ -188,13 +188,28 @@ sequenceDiagram
 
 **What this does:** confirmation and password-reset emails reach real people (Supabase's built-in sender only mails your own team), and the links in them open your site, which finishes the sign-in at `/auth/callback`.
 
-## Step 4½ — Database update (run once per project, staging first)
+## Step 4½ — Database updates (run once per project, staging first, in this order)
 
-New features (Subscriptions, profile editing, Delete my account) need one more SQL file. In each Supabase project → **SQL Editor → New query**, paste the whole of `supabase/migrations/20261101000000_subscriptions_profile_account_deletion.sql` and press **Run**. "Success. No rows returned" is right. Running it twice fails harmlessly with "column already exists".
+In each Supabase project → **SQL Editor → New query**, paste the whole file and press **Run**. "Success. No rows returned" is right. Running one twice fails harmlessly with "already exists".
+
+1. `supabase/migrations/20261101000000_subscriptions_profile_account_deletion.sql`: Subscriptions, profile editing, Delete my account.
+2. `supabase/migrations/20261102000000_subscription_details_email_reminders.sql`: subscription categories, description, billing email, custom logo, the reminders switch, and email reminders.
+
+## Step 4¾ — Email reminders for subscriptions (optional, free)
+
+Subscriptions can get an email at least a week before they renew. This uses Brevo's email API; the SMTP key from Step 4 can't be used for this.
+1. Brevo → **SMTP & API → API keys → Generate a new API key**. Treat it like a password: don't paste it anywhere except the next step.
+2. Supabase → **Edge Functions → Secrets** → add:
+   - `BREVO_API_KEY`: the key from step 1.
+   - `BREVO_SENDER_EMAIL`: a sender address verified in Brevo (e.g. `reminders@yourdomain.com`).
+   - `SITE_URL`: that environment's website, e.g. `https://velora-app.netlify.app` (adds a "Review your subscriptions" link).
+3. **Re-deploy the reminders function** with the new code: Edge Functions → `reminders` → **Code** → paste the latest `supabase/functions/reminders/index.ts` → **Deploy**.
+
+Without these secrets the function still sends phone reminders and simply skips email.
 
 ## Step 5 — Smoke test (staging first, then production)
 
-On the website: sign up → confirm email → add an account → add a transaction → import a bank CSV → set a budget → create a goal and contribute → add a bill → add a subscription (check the logo) → delete it (a styled confirm popup appears) → Accounts: edit your name, change password, sign in with Google. Switch your device to dark mode and back. Check the **Flow** page shows your money moving.
+On the website: sign up → confirm email → add an account → add a transaction → import a bank CSV → set a budget → create a goal and contribute → add a bill → add a subscription (check the logo) → delete it (a styled confirm popup appears) → edit it (category, description, upload a logo) → Activity → Import an Excel or CSV statement and review it → sign out, use **Forgot password?** and set a new one → sign in with **Remember me** → Accounts: edit your name, sign in with Google. Leave a tab idle for 30 minutes: you should see “Still there?” and then be signed out. Switch your device to dark mode and back. Check the **Flow** page shows your money moving.
 
 ## Step 6 — Android app (later)
 

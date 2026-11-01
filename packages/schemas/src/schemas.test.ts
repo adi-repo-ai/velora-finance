@@ -42,6 +42,14 @@ describe('subscriptions and settings', () => {
     expect(billSchema.parse(sub).website).toBeUndefined();
     expect(billSchema.safeParse({ ...sub, website: 'not a site' }).success).toBe(false);
   });
+  it('validates subscription details', () => {
+    expect(billSchema.parse(sub).notify).toBe(true);
+    expect(billSchema.safeParse({ ...sub, category: 'streaming', accountEmail: 'me@example.com', logo: 'data:image/webp;base64,UklGRg==' }).success).toBe(true);
+    expect(billSchema.safeParse({ ...sub, accountEmail: '' }).success).toBe(true);
+    expect(billSchema.safeParse({ ...sub, accountEmail: 'nope' }).success).toBe(false);
+    expect(billSchema.safeParse({ ...sub, category: 'crypto' }).success).toBe(false);
+    expect(billSchema.safeParse({ ...sub, logo: 'data:image/svg+xml;base64,PHN2Zz4=' }).success).toBe(false);
+  });
   it('requires matching passwords', () => {
     const r = passwordChangeSchema.safeParse({ password: 'longenough', confirm: 'different' });
     expect(r.success).toBe(false);

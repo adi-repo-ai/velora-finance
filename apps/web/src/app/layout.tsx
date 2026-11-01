@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { cssVars, pearl, noir, type ThemeName } from "@velora/config";
+import { CookieNotice } from "@/components/cookie-notice";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full">
         <div className="ambient" aria-hidden />
         <Providers>{children}</Providers>
+        <CookieNotice />
       </body>
     </html>
   );

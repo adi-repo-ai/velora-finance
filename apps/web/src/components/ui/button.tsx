@@ -20,9 +20,15 @@ const buttonVariants = cva(
   },
 );
 
+/** `loading` disables the button and shows a spinner while keeping its label (and width) visible. */
 export function Button({
-  className, variant, size, asChild = false, ...props
-}: ComponentProps<"button"> & VariantProps<typeof buttonVariants> & { asChild?: boolean }) {
-  const Comp = asChild ? Slot.Root : "button";
-  return <Comp data-slot="button" className={cn(buttonVariants({ variant, size }), className)} {...props} />;
+  className, variant, size, asChild = false, loading = false, disabled, children, ...props
+}: ComponentProps<"button"> & VariantProps<typeof buttonVariants> & { asChild?: boolean; loading?: boolean }) {
+  if (asChild) return <Slot.Root data-slot="button" className={cn(buttonVariants({ variant, size }), className)} {...props}>{children}</Slot.Root>;
+  return (
+    <button data-slot="button" className={cn(buttonVariants({ variant, size }), className)} disabled={disabled || loading} aria-busy={loading || undefined} {...props}>
+      {loading && <span className="size-4 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent" aria-hidden />}
+      {children}
+    </button>
+  );
 }

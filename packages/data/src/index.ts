@@ -221,7 +221,7 @@ export function useDeleteTransaction() {
   });
 }
 
-export type ImportRow = { postedOn: string; description: string; amount: number; externalId: string; merchant?: string };
+export type ImportRow = { postedOn: string; description: string; amount: number; externalId: string; merchant?: string; categoryId?: string | null };
 
 /** Upserts on (account_id, external_id): re-importing a statement never duplicates rows. */
 export function useImportTransactions() {
@@ -235,7 +235,7 @@ export function useImportTransactions() {
           .upsert(
             rows.filter((r) => r.amount !== 0).map((r) => ({
               account_id: accountId, posted_on: r.postedOn, amount: r.amount, description: r.description,
-              merchant: r.merchant ?? null, external_id: r.externalId, source: 'import' as const,
+              merchant: r.merchant ?? null, category_id: r.categoryId ?? null, external_id: r.externalId, source: 'import' as const,
             })),
             { onConflict: 'account_id,external_id', ignoreDuplicates: true },
           )
@@ -306,8 +306,38 @@ export function useAddBill() {
           .from('recurring_items')
           .insert({
             name: b.name, amount: b.amount, currency, cadence: b.cadence, next_due_on: b.nextDueOn,
-            remind_days_before: b.remindDaysBefore, autopay: b.autopay, kind: b.kind, website: b.website ?? null,
+            remind_days_before: b.remindDaysBefore, autopay: b.autopay, kind: b.kind, ...billDetails(b),
           })
+          .select()
+          .single(),
+      );
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.bills }),
+  });
+}
+
+/** Optional subscription fields, with empty inputs stored as null. */
+function billDetails(b: ReturnType<typeof billSchema.parse>) {
+  return {
+    website: b.website ?? null, category: b.category ?? null, description: b.description || null,
+    account_email: b.accountEmail || null, logo: b.logo ?? null, notify: b.notify,
+  };
+}
+
+export function useUpdateBill() {
+  const sb = useSupabase();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, input }: { id: string; input: BillInput }) => {
+      const b = billSchema.parse(input);
+      return must(
+        await sb
+          .from('recurring_items')
+          .update({
+            name: b.name, amount: b.amount, cadence: b.cadence, next_due_on: b.nextDueOn,
+            remind_days_before: b.remindDaysBefore, autopay: b.autopay, ...billDetails(b),
+          })
+          .eq('id', id)
           .select()
           .single(),
       );

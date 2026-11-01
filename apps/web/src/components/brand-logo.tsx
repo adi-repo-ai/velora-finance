@@ -22,12 +22,20 @@ export function bundledIcon(domain: string): SimpleIcon | undefined {
 }
 
 /**
- * Company logo: a bundled official mark when we have one, otherwise the site's own icon (via Google's
+ * Company logo: the user's own upload, else a bundled official mark when we have one, otherwise the site's own icon (via Google's
  * favicon service), otherwise the first letter.
  */
-export function BrandLogo({ name, domain, className }: { name: string; domain?: string | null; className?: string }) {
+export function BrandLogo({ name, domain, src, className }: { name: string; domain?: string | null; src?: string | null; className?: string }) {
   const [failed, setFailed] = useState(false);
   const box = cn("grid size-12 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white shadow-[inset_0_0_0_1px_rgb(23_20_15/.08)]", className);
+  if (src) {
+    return (
+      <span className={box} aria-hidden>
+        {/* eslint-disable-next-line @next/next/no-img-element -- user-uploaded data URL */}
+        <img src={src} alt="" className="size-full object-contain" />
+      </span>
+    );
+  }
   const icon = domain ? bundledIcon(domain) : undefined;
   if (icon) {
     return (

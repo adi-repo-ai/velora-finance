@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useProfile } from "@velora/data";
+import { useSyncExternalStore } from "react";
+import { Notifications } from "@/components/notifications";
 import { cn } from "@/lib/utils";
+
+const noop = () => () => {};
+// Server render has no clock for the viewer's timezone, so the date appears once hydrated.
+const todayLabel = () => new Date().toLocaleDateString("en", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
 const TABS = [
   ["/", "Wealth"],
@@ -19,6 +25,7 @@ export function Nav() {
   const path = usePathname();
   const { data: profile } = useProfile();
   const initial = profile?.display_name?.trim()[0]?.toUpperCase() ?? "";
+  const today = useSyncExternalStore(noop, todayLabel, () => "");
   return (
     <nav aria-label="Main" className="glass enter sticky top-4 z-30 mx-auto flex w-fit max-w-[calc(100vw-24px)] items-center gap-1 overflow-x-auto rounded-full p-1.5">
       <Link href="/" className="flex items-center gap-2.5 pl-2 pr-4 font-serif text-2xl">
@@ -41,6 +48,8 @@ export function Nav() {
           </Link>
         );
       })}
+      <time dateTime={today ? new Date().toLocaleDateString("en-CA") : undefined} className="ml-3 hidden whitespace-nowrap border-l border-line pl-4 text-sm text-muted xl:block">{today}</time>
+      <span className="ml-1"><Notifications /></span>
       <Link
         href="/accounts"
         aria-label="Accounts and settings"

@@ -220,6 +220,16 @@ A phone receives reminders after the user taps **Turn on reminders** on the Bill
 
 **Social sign-in.** Buttons from `NEXT_PUBLIC_AUTH_PROVIDERS` call `signInWithOAuth`. The provider sends the user back through Supabase to `/auth/callback`, which swaps the code for a session cookie, the same way email links work. New users get their name from the provider profile.
 
+**Import (web).** Accepts Excel `.xlsx` (first sheet), CSV, TSV and semicolon-separated files. It finds the header row even below a bank's preamble and skips footer rows like "Closing balance". It understands a signed `Amount`, `Amount` + `Dr/Cr`, or separate `Withdrawal`/`Deposit` columns. It detects ₹/INR/Rs vs $/USD and only imports into an account of the matching currency (you can override the currency). Before anything is saved you review every row: untick rows, rename them, and change the guessed category.
+
+**Subscriptions in depth.** Each subscription can have a category (Streaming, Music, Cloud, Software, AI tools…), a description, the billing email it's under, an uploaded logo, an auto-renew status and a reminders switch. The page groups subscriptions by category with subtotals, filters by category or status (renewing this week, overdue, auto-renew off, reminders off), shows a spending-by-category overview, and lists the next 30 days of renewals with **See all**. Uploaded logos are redrawn in the browser to a 128×128 WebP, so only plain pixels are stored, and the database rejects anything that isn't PNG, JPG or WebP.
+
+**Reminders.** The hourly function sends phone pushes `remind_days_before` days ahead. For subscriptions it also sends an email at least 7 days ahead (when Brevo is configured). Push and email are logged separately in `notifications_log`, so neither is ever sent twice. The 🔔 in the top bar lists everything overdue or due within 7 days.
+
+**Sessions.** Sign-in uses Supabase's secure cookies. On top of that, `SessionGuard` signs you out after 30 minutes without activity, with a 2-minute "Still there?" warning; activity in any tab counts. With **Remember me** the limit is 30 days. Without it you're also signed out when the browser closes. **Forgot password?** emails a one-time link to `/reset-password`. Saving a new password signs out every device.
+
+**Security headers.** Every page is sent with a Content-Security-Policy (only this site, Supabase, and Google favicons for logos), HSTS, `X-Frame-Options: DENY`, `nosniff`, a strict referrer policy and a Permissions-Policy that blocks the camera, microphone and location. A cookie notice explains that only essential cookies are used.
+
 **Footer and legal pages.** Signed-in pages end with a footer: brand, product, account and legal links, the support email, and ©. Sign-in pages show a compact version. `/privacy` and `/terms` are public. Review their wording before launch.
 
 **Insights ("Velora noticed", web Flow page).** Simple rules over your own data: budgets near or over limit, the category leading your spending, bills due within three days.

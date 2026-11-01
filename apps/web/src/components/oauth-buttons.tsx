@@ -41,7 +41,8 @@ const ICONS: Partial<Record<Provider, React.ReactNode>> = {
   ),
 };
 
-export function OAuthButtons() {
+/** `beforeRedirect` runs just before leaving for the provider (e.g. to remember "Remember me"). */
+export function OAuthButtons({ beforeRedirect }: { beforeRedirect?: () => void }) {
   const [busy, setBusy] = useState<Provider | null>(null);
   const [error, setError] = useState<Error | null>(null);
   if (PROVIDERS.length === 0) return null;
@@ -49,6 +50,7 @@ export function OAuthButtons() {
   async function go(provider: Provider) {
     setBusy(provider);
     setError(null);
+    beforeRedirect?.();
     const { error: err } = await getSupabase().auth.signInWithOAuth({ provider, options: { redirectTo: `${location.origin}/auth/callback` } });
     // On success the browser leaves the page, so only failures land here.
     if (err) { setError(err); setBusy(null); }

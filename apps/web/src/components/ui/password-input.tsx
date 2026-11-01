@@ -1,7 +1,7 @@
 "use client";
 
 import { generatePassword, passwordStrength } from "@velora/core";
-import { Check, Copy, Eye, EyeOff, Sparkles } from "lucide-react";
+import { Check, Copy, Eye, EyeOff, LockKeyhole, Sparkles } from "lucide-react";
 import { useState, type ComponentProps } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -44,6 +44,7 @@ export function PasswordInput({
         <Input
           {...props}
           type={shown ? "text" : "password"}
+          icon={<LockKeyhole />}
           value={value}
           onChange={(e) => { setOwn(e.target.value); setCopied(false); onChange?.(e); }}
           className={cn("pr-12", shown && value && "font-mono tracking-wide", className)}

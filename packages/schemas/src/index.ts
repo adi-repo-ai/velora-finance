@@ -3,6 +3,10 @@ import { z } from 'zod';
 
 export * from './database.types';
 
+export const SUBSCRIPTION_CATEGORIES = [
+  'streaming', 'music', 'cloud', 'software', 'ai', 'gaming', 'news', 'fitness', 'education', 'food', 'shopping', 'telecom', 'other',
+] as const;
+
 export const currencySchema = z.enum(['USD', 'INR']);
 export const countrySchema = z.enum(['US', 'IN']);
 
@@ -73,6 +77,16 @@ export const billSchema = z.object({
   remindDaysBefore: z.coerce.number().int().min(0).max(30).default(3),
   autopay: z.boolean().default(false),
   kind: z.enum(['bill', 'subscription']).default('bill'),
+  category: z.enum(SUBSCRIPTION_CATEGORIES).optional(),
+  description: z.string().trim().max(300, 'Keep it under 300 characters').optional(),
+  accountEmail: z.union([z.email('Enter a valid email'), z.literal('')]).optional(),
+  /** Re-encoded raster image from the logo picker; mirrors the database check. */
+  logo: z
+    .string()
+    .max(60000, 'Logo is too large')
+    .regex(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/, 'Use a PNG, JPG or WebP image')
+    .optional(),
+  notify: z.boolean().default(true),
   /** Optional website for the brand logo; accepts a URL or bare domain. */
   website: z
     .string()

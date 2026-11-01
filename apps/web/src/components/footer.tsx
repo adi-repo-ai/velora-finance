@@ -31,7 +31,16 @@ export async function Footer({ compact = false }: { compact?: boolean }) {
     </div>
   );
 
-  if (compact) return <footer className="mx-auto w-full max-w-[440px] pt-2">{bottom}</footer>;
+  if (compact) {
+    return (
+      <footer className="flex items-center justify-center gap-2 whitespace-nowrap text-xs text-muted">
+        <span>© {await year()} Velora. All rights reserved.</span><span aria-hidden>·</span>
+        <Link href="/privacy" className="hover:text-text">Privacy</Link><span aria-hidden>·</span>
+        <Link href="/terms" className="hover:text-text">Terms</Link>
+        {support && <><span aria-hidden>·</span><a href={`mailto:${support}`} className="hover:text-text">Contact</a></>}
+      </footer>
+    );
+  }
 
   return (
     <footer className="glass mx-auto mt-6 w-full max-w-[1380px] p-8 sm:p-10">

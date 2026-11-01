@@ -1,15 +1,17 @@
 "use client";
 
 import { fieldErrors, signUpSchema } from "@velora/schemas";
+import { Mail, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { OAuthButtons } from "@/components/oauth-buttons";
 import { ErrorNote } from "@/components/states";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { clearErrorOnEdit, Field } from "@/components/ui/label";
+import { endSession, startSession } from "@/lib/session";
 import { getSupabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +22,8 @@ export default function SignUpPage() {
   const [failure, setFailure] = useState<Error | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(endSession, []);
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -33,10 +37,10 @@ export default function SignUpPage() {
       password,
       options: { data: { display_name: displayName, home_country: homeCountry }, emailRedirectTo: `${location.origin}/auth/callback` },
     });
+    if (error) { setBusy(false); return setFailure(error); }
+    if (data.session) { startSession(false); return router.replace("/"); }
     setBusy(false);
-    if (error) return setFailure(error);
-    if (data.session) router.replace("/");
-    else setSentTo(email); // email confirmation is on
+    setSentTo(email); // email confirmation is on
   }
 
   if (sentTo) {
@@ -52,7 +56,7 @@ export default function SignUpPage() {
     <form onSubmit={submit} className="glass enter grid gap-5 p-8" noValidate onChange={clearErrorOnEdit(setErrors)}>
       <h1 className="font-serif text-4xl">Open your <em className="text-gold-2">vault.</em></h1>
       <OAuthButtons />
-      <Field id="displayName" label="Your name" error={errors.displayName}><Input id="displayName" name="displayName" autoComplete="given-name" aria-invalid={!!errors.displayName} /></Field>
+      <Field id="displayName" label="Your name" error={errors.displayName}><Input id="displayName" name="displayName" autoComplete="given-name" icon={<UserRound />} aria-invalid={!!errors.displayName} /></Field>
       <div className="grid gap-2">
         <span className="label-mono" id="country-label">Where you bank</span>
         <div role="radiogroup" aria-labelledby="country-label" className="grid grid-cols-2 gap-2">
@@ -66,10 +70,10 @@ export default function SignUpPage() {
           ))}
         </div>
       </div>
-      <Field id="email" label="Email" error={errors.email}><Input id="email" name="email" type="email" autoComplete="email" aria-invalid={!!errors.email} /></Field>
+      <Field id="email" label="Email" error={errors.email}><Input id="email" name="email" type="email" autoComplete="email" icon={<Mail />} placeholder="you@example.com" aria-invalid={!!errors.email} /></Field>
       <Field id="password" label="Password" error={errors.password}><PasswordInput id="password" name="password" autoComplete="new-password" suggest aria-invalid={!!errors.password} /></Field>
       {failure && <ErrorNote error={failure} />}
-      <Button type="submit" size="lg" disabled={busy}>{busy ? "Creating…" : "Create account"}</Button>
+      <Button type="submit" size="lg" loading={busy}>{busy ? "Creating your vault…" : "Create account"}</Button>
       <p className="text-center text-sm text-muted">Already have one? <Link href="/login" className="font-medium text-gold-2 underline-offset-4 hover:underline">Sign in</Link></p>
     </form>
   );

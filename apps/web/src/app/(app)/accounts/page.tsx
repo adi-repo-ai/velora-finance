@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input, Select } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { clearErrorOnEdit, Field } from "@/components/ui/label";
+import { endSession } from "@/lib/session";
 import { getSupabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -308,6 +309,7 @@ function DangerSection() {
   const deleteMe = useDeleteMyAccount();
 
   async function signOut() {
+    endSession();
     await getSupabase().auth.signOut();
     qc.clear(); // drop the previous user's cached data
     router.replace("/login");
@@ -325,7 +327,7 @@ function DangerSection() {
             description="Everything in Velora will be permanently deleted. This can’t be undone."
             confirmLabel="Delete forever"
             requireText="DELETE"
-            onConfirm={async () => { await deleteMe.mutateAsync(); qc.clear(); router.replace("/login"); }}
+            onConfirm={async () => { await deleteMe.mutateAsync(); endSession(); qc.clear(); router.replace("/login"); }}
             trigger={<Button variant="destructive" size="sm">Delete account</Button>}
           />
         </div>

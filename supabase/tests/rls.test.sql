@@ -114,4 +114,26 @@ end $$;
 insert into auth.users values ('33333333-3333-3333-3333-333333333333', '{"full_name":"Sam Lee"}');
 do $$ begin assert (select display_name from profiles where id = '33333333-3333-3333-3333-333333333333') = 'Sam Lee', 'full_name used'; end $$;
 
+-- 10. Subscription details are validated; push and email reminders are logged separately
+set role authenticated;
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+insert into recurring_items (id, name, amount, currency, next_due_on, kind, category, description, account_email, logo)
+  values ('bbbbbbbb-0000-0000-0000-000000000001', 'Hotstar', 29900, 'INR', now()::date + 7, 'subscription', 'streaming', 'Family plan', 'priya@example.com', 'data:image/webp;base64,UklGRg==');
+do $$ begin
+  assert (select notify from recurring_items where id = 'bbbbbbbb-0000-0000-0000-000000000001'), 'reminders on by default';
+  begin insert into recurring_items (name, amount, currency, next_due_on, logo) values ('x', 1, 'INR', now(), 'data:image/svg+xml;base64,PHN2Zz4=');
+    raise exception 'FAIL: svg logo allowed'; exception when check_violation then null; end;
+  begin insert into recurring_items (name, amount, currency, next_due_on, account_email) values ('x', 1, 'INR', now(), 'not-an-email');
+    raise exception 'FAIL: bad email allowed'; exception when check_violation then null; end;
+  begin insert into recurring_items (name, amount, currency, next_due_on, category) values ('x', 1, 'INR', now(), 'crypto');
+    raise exception 'FAIL: unknown category allowed'; exception when check_violation then null; end;
+end $$;
+reset role;
+insert into notifications_log (recurring_item_id, due_on, channel) values
+  ('bbbbbbbb-0000-0000-0000-000000000001', now()::date + 7, 'push'), ('bbbbbbbb-0000-0000-0000-000000000001', now()::date + 7, 'email');
+do $$ begin
+  begin insert into notifications_log (recurring_item_id, due_on, channel) values ('bbbbbbbb-0000-0000-0000-000000000001', now()::date + 7, 'email');
+    raise exception 'FAIL: duplicate email claim allowed'; exception when unique_violation then null; end;
+end $$;
+
 select 'ALL RLS TESTS PASSED' as result;

@@ -1,6 +1,8 @@
 "use client";
 
-import { importStatement, merchantFromNarration, monthKey, type ImportResult } from "@velora/core";
+import {
+  cellToString, formatMoney, guessCategory, importRows, importStatement, merchantFromNarration, monthKey, type ImportedRow, type StatementImport,
+} from "@velora/core";
 import { useAccounts, useAddTransaction, useCategories, useCurrency, useDeleteTransaction, useImportTransactions, useProfile, useTransactions } from "@velora/data";
 import { fieldErrors, transactionSchema } from "@velora/schemas";
 import { useState, type FormEvent } from "react";
@@ -130,47 +132,137 @@ function AddTransactionDialog() {
   );
 }
 
+type Draft = ImportedRow & { include: boolean; merchant: string; categoryId: string };
+
+/** Reads CSV/TSV text or an Excel workbook (first sheet) into transactions. */
+async function readStatement(file: File, dayFirst: boolean): Promise<StatementImport> {
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".xls")) throw new Error("Old .xls files aren’t supported. In Excel choose File → Save As → .xlsx or CSV, then import that.");
+  if (name.endsWith(".xlsx") || file.type.includes("spreadsheetml")) {
+    const { readSheet } = await import("read-excel-file/browser"); // loaded only when someone imports Excel
+    const rows = (await readSheet(file)) as unknown[][];
+    return importRows(rows.map((r) => r.map(cellToString)), { dayFirst });
+  }
+  return importStatement(await file.text(), { dayFirst });
+}
+
 function ImportDialog() {
   const [open, setOpen] = useState(false);
-  const [preview, setPreview] = useState<ImportResult | null>(null);
+  const [result, setResult] = useState<StatementImport | null>(null);
+  const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [readError, setReadError] = useState<string>();
+  const [currency, setCurrency] = useState<"USD" | "INR">("USD");
   const [accountId, setAccountId] = useState("");
   const { data: accounts = [] } = useAccounts();
+  const { data: categories = [] } = useCategories();
   const { data: profile } = useProfile();
+  const home = useCurrency();
   const run = useImportTransactions();
+  const matching = accounts.filter((a) => a.currency === currency);
+  const target = matching.find((a) => a.id === accountId) ?? matching[0];
+  const chosen = drafts.filter((d) => d.include);
+
+  function reset() { setResult(null); setDrafts([]); setReadError(undefined); run.reset(); }
 
   async function onFile(file: File | undefined) {
-    run.reset();
-    if (!file) return setPreview(null);
-    // Indian statements write dates day-first; US ones month-first.
-    setPreview(importStatement(await file.text(), { dayFirst: profile?.home_country === "IN" }));
+    reset();
+    if (!file) return;
+    try {
+      // Indian statements write dates day-first; US ones month-first.
+      const r = await readStatement(file, profile?.home_country === "IN");
+      const byName = new Map(categories.map((c) => [c.name, c.id]));
+      setResult(r);
+      setCurrency(r.currency ?? home);
+      setDrafts(r.rows.map((row) => ({
+        ...row, include: true, merchant: merchantFromNarration(row.description),
+        categoryId: byName.get(guessCategory(row.description, row.amount) ?? "") ?? "",
+      })));
+    } catch (e) {
+      setReadError(e instanceof Error ? e.message : "Couldn’t read that file");
+    }
   }
 
+  const edit = (i: number, patch: Partial<Draft>) => setDrafts((ds) => ds.map((d, j) => (j === i ? { ...d, ...patch } : d)));
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setPreview(null); run.reset(); } }}>
-      <DialogTrigger asChild><Button variant="glass">Import CSV</Button></DialogTrigger>
-      <DialogContent title="Import a statement" description="CSV export from your bank. We look for Date, Description and Amount (or Debit/Credit) columns. Re-importing the same file never creates duplicates.">
-        <Field id="importAccount" label="Into account">
-          <Select id="importAccount" value={accountId || accounts[0]?.id || ""} onChange={(e) => setAccountId(e.target.value)}>
-            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </Select>
-        </Field>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
+      <DialogTrigger asChild><Button variant="glass">Import</Button></DialogTrigger>
+      <DialogContent
+        title="Import a statement"
+        description="Excel (.xlsx), CSV or TSV from any bank. We find the Date, Description and Amount (or Debit/Credit) columns, spot ₹ or $, and let you review everything before it’s saved. Re-importing the same file never creates duplicates."
+        className="w-[min(900px,calc(100vw-32px))]"
+      >
         <Field id="file" label="Statement file">
-          <Input id="file" type="file" accept=".csv,text/csv" className="pt-2.5" onChange={(e) => onFile(e.target.files?.[0])} />
+          <Input id="file" type="file" accept=".xlsx,.csv,.tsv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="pt-2.5" onChange={(e) => onFile(e.target.files?.[0])} />
         </Field>
-        {preview && (
-          <div className="rounded-2xl bg-surface/50 p-4 text-sm">
-            <p><b>{preview.rows.length}</b> transactions ready{preview.errors.length > 0 && <>, <span className="text-negative">{preview.errors.length} skipped</span></>}</p>
-            {preview.errors.slice(0, 3).map((e) => <p key={e.line} className="mt-1 text-xs text-negative">Line {e.line}: {e.reason}</p>)}
-          </div>
+        {readError && <ErrorNote error={new Error(readError)} />}
+
+        {result && (
+          <>
+            <div className="grid gap-4 rounded-3xl bg-surface/50 p-4 sm:grid-cols-[auto_1fr] sm:items-end">
+              <Field id="importCurrency" label={result.currency ? `Currency · detected ${result.currency}` : "Currency · not detected, please confirm"}>
+                <Select id="importCurrency" value={currency} onChange={(e) => setCurrency(e.target.value as "USD" | "INR")}>
+                  <option value="INR">₹ INR — Indian rupee</option>
+                  <option value="USD">$ USD — US dollar</option>
+                </Select>
+              </Field>
+              {matching.length ? (
+                <Field id="importAccount" label={`Into ${currency} account`}>
+                  <Select id="importAccount" value={target?.id ?? ""} onChange={(e) => setAccountId(e.target.value)}>
+                    {matching.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </Select>
+                </Field>
+              ) : (
+                <p className="text-sm text-negative">You have no {currency} account yet. <a href="/accounts#accounts" className="font-medium underline">Add one</a>, or switch the currency if it was detected wrongly.</p>
+              )}
+            </div>
+
+            {drafts.length > 0 && (
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                  <p><b>{chosen.length}</b> of {drafts.length} selected{result.errors.length > 0 && <>, <span className="text-negative">{result.errors.length} lines skipped</span></>}</p>
+                  <div className="flex gap-3 text-gold-2">
+                    <button type="button" className="font-medium hover:underline" onClick={() => setDrafts((ds) => ds.map((d) => ({ ...d, include: true })))}>Select all</button>
+                    <button type="button" className="font-medium hover:underline" onClick={() => setDrafts((ds) => ds.map((d) => ({ ...d, include: false })))}>Select none</button>
+                  </div>
+                </div>
+                <div className="mt-2 max-h-[44vh] overflow-auto rounded-2xl border border-line">
+                  <table className="w-full min-w-[640px] text-sm">
+                    <thead className="sticky top-0 bg-surface text-left"><tr className="label-mono">
+                      <th className="w-10 p-2"><span className="sr-only">Include</span></th><th className="p-2">Date</th><th className="p-2">Description</th><th className="p-2">Category</th><th className="p-2 text-right">Amount</th>
+                    </tr></thead>
+                    <tbody>
+                      {drafts.map((d, i) => (
+                        <tr key={d.externalId} className={cn("border-t border-line", !d.include && "opacity-45")}>
+                          <td className="p-2 text-center"><input type="checkbox" checked={d.include} onChange={(e) => edit(i, { include: e.target.checked })} aria-label={`Include ${d.merchant}`} className="size-4 accent-[rgb(var(--gold-2))]" /></td>
+                          <td className="whitespace-nowrap p-2 text-muted">{d.postedOn}</td>
+                          <td className="p-2"><input value={d.merchant} onChange={(e) => edit(i, { merchant: e.target.value })} title={d.description} aria-label="Description" className="w-full rounded-lg bg-transparent px-2 py-1 hover:bg-surface/70 focus:bg-surface focus:outline-2 focus:outline-gold-1" /></td>
+                          <td className="p-2">
+                            <select value={d.categoryId} onChange={(e) => edit(i, { categoryId: e.target.value })} aria-label="Category" className="w-full rounded-lg bg-transparent px-1 py-1 hover:bg-surface/70 focus:outline-2 focus:outline-gold-1">
+                              <option value="">Uncategorised</option>
+                              {categories.filter((c) => (d.amount > 0 ? c.kind !== "expense" : c.kind !== "income")).map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+                            </select>
+                          </td>
+                          <td className={cn("whitespace-nowrap p-2 text-right font-medium", d.amount > 0 && "text-positive")}>{formatMoney(d.amount, currency, { cents: true })}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            {result.errors.slice(0, 3).map((e) => <p key={e.line} className="text-xs text-negative">Line {e.line}: {e.reason}</p>)}
+          </>
         )}
         {run.data && <p role="status" className="text-sm text-positive">Imported {run.data.inserted}. {run.data.skipped > 0 && `${run.data.skipped} already existed.`}</p>}
         {run.error && <ErrorNote error={run.error} />}
         <Button
           size="lg"
-          disabled={!preview?.rows.length || run.isPending || !accounts.length}
-          onClick={() => preview && run.mutate({ accountId: accountId || accounts[0]!.id, rows: preview.rows.map((r) => ({ ...r, merchant: merchantFromNarration(r.description) })) })}
+          loading={run.isPending}
+          disabled={!chosen.length || !target || !!run.data}
+          onClick={() => target && run.mutate({ accountId: target.id, rows: chosen.map((d) => ({ postedOn: d.postedOn, description: d.description, amount: d.amount, externalId: d.externalId, merchant: d.merchant, categoryId: d.categoryId || null })) })}
         >
-          {run.isPending ? "Importing…" : "Import"}
+          {run.isPending ? "Importing…" : `Import ${chosen.length || ""} transactions`}
         </Button>
       </DialogContent>
     </Dialog>
