@@ -2,6 +2,7 @@
 
 Personal all-in-one finance app for the **USA** and **India** — web (Next.js) and mobile (Expo), sharing one Supabase backend and the Pearl design system.
 
+- **Setup, browser only (start here):** [`docs/SETUP.md`](docs/SETUP.md)
 - How it works (as built): [`docs/HOW-IT-WORKS.md`](docs/HOW-IT-WORKS.md)
 - Target architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - Design system: [`docs/design/DESIGN.md`](docs/design/DESIGN.md)
