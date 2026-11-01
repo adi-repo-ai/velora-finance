@@ -71,6 +71,7 @@ select vault.create_secret('<cron-secret>', 'cron_secret');
 ### 2d. Deploy the reminders function
 1. On GitHub open `supabase/functions/reminders/index.ts` → **Raw** → copy.
 2. Supabase → **Edge Functions → Deploy a new function → Via Editor** → name it exactly **`reminders`** → paste → **Deploy**.
+   The name is fixed into the function's web address at the first deploy. **Renaming later does not change the address** — if it was created with another name (the editor suggests one like `dynamic-function`), delete it and create a new one named `reminders`. The **URL** column must end in `/functions/v1/reminders`.
 3. In the function's details/settings, turn **off** "Verify JWT" (a.k.a. "Enforce JWT verification").
 4. **Edge Functions → Secrets** → add `CRON_SECRET` = the same value as in 2c.
 
@@ -94,17 +95,25 @@ select net.http_post(
 ```
 Wait ~5 seconds:
 ```sql
-select status_code, content::text from net._http_response order by created desc limit 1;
+select id, status_code, content::text, created from net._http_response order by id desc limit 4;
 ```
-Expect **200** and `{"checked":0,"sent":0,"rolled":0}`.
+Older attempts stay in this table, so read the **top row** (its `id` matches the number the test call returned). Expect **200** and `{"checked":0,"sent":0,"rolled":0}`.
 
 | Result | Meaning | Fix |
 |---|---|---|
-| `403` | Secrets don't match | Re-paste `CRON_SECRET` in Edge Functions → Secrets so it equals the Vault value exactly (no spaces) |
+| `403` | Secrets don't match (or the Vault still holds the literal `<cron-secret>`) | Re-paste `CRON_SECRET` in Edge Functions → Secrets so it equals the Vault value exactly (no spaces) |
 | `401` | JWT check still on | Turn off "Verify JWT" on `reminders` |
-| `404` | Wrong function name/URL | Name must be exactly `reminders`; `project_url` must be `https://<project-ref>.supabase.co` |
+| `404` | Wrong function address | Function's URL must end in `/functions/v1/reminders` (re-create it, don't rename); Vault `project_url` must be **this** project's `https://<project-ref>.supabase.co` |
 | `500` | Function error | Edge Functions → `reminders` → **Logs** shows the message |
 | no row | Request still running | Wait a few seconds and query again |
+
+To inspect or fix the Vault (shows the address, hides the secret):
+```sql
+select name, case when name = 'project_url' then decrypted_secret else '(hidden)' end as value, length(decrypted_secret) as len
+from vault.decrypted_secrets where name in ('project_url','cron_secret');
+-- expect project_url length 40, cron_secret length 64; fix either with:
+-- select vault.update_secret((select id from vault.secrets where name = 'cron_secret'), 'NEW-VALUE');
+```
 
 ---
 
