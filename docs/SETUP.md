@@ -160,6 +160,8 @@ sequenceDiagram
    | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | velora's **publishable** key | velora-staging's **publishable** key |
 
    The values are in each Supabase project → **Project Settings → API Keys** (or the **Connect** button).
+   Don't tick "Contains secret values" for these two — they are public by design. (`apps/web/netlify.toml` also tells Netlify's secret scanner to expect them; without that, deploys fail with "Secrets scanning found secrets in build".)
+   If Netlify shows a build command with `expo` or a publish directory `dist`, it picked the mobile app: set Package directory `apps/web`, Build command `pnpm turbo run build --filter=@velora/web`, Publish directory `apps/web/.next`.
 4. **Deploy.** Then Site configuration → Build & deploy → **Branches and deploy contexts → Branch deploys: Let me add individual branches** → `staging`.
 
 **What this does:** Netlify builds the website from GitHub automatically on every merge — `main` becomes the live site, `staging` the test site — and each talks only to its own database.
