@@ -1,11 +1,13 @@
 "use client";
 
 import { formatMoney } from "@velora/core";
-import { useAddBill, useBills, useCurrency, useMarkBillPaid } from "@velora/data";
+import { useAddBill, useBills, useCurrency, useDeleteBill, useMarkBillPaid } from "@velora/data";
 import { billSchema, fieldErrors } from "@velora/schemas";
 import { useState, type FormEvent } from "react";
 import { Empty, ErrorNote, Skeleton } from "@/components/states";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input, Select } from "@/components/ui/input";
 import { clearErrorOnEdit, Field } from "@/components/ui/label";
@@ -14,19 +16,20 @@ import { cn } from "@/lib/utils";
 const daysUntil = (iso: string) => Math.ceil((new Date(`${iso}T00:00:00`).getTime() - new Date(new Date().toDateString()).getTime()) / 86_400_000);
 
 export default function BillsPage() {
-  const bills = useBills();
+  const bills = useBills("bill");
+  const del = useDeleteBill();
   const paid = useMarkBillPaid();
   return (
     <section className="glass enter mx-auto max-w-3xl p-8 sm:p-10">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div><p className="label-mono">Bills & subscriptions</p><h1 className="mt-2 font-serif text-6xl leading-none">Never <em className="text-gold-2">miss one.</em></h1></div>
+        <div><p className="label-mono">Bills</p><h1 className="mt-2 font-serif text-6xl leading-none">Never <em className="text-gold-2">miss one.</em></h1></div>
         <AddBillDialog />
       </div>
-      <p className="mt-3 text-sm text-muted">The mobile app sends a reminder before each due date.</p>
+      <p className="mt-3 text-sm text-muted">Rent, cards, utilities and loans. Velora reminds you before each due date. Subscriptions have their own tab.</p>
       <div className="mt-6">
         {bills.error && <ErrorNote error={bills.error} />}
         {bills.isPending && <Skeleton className="h-40 w-full" />}
-        {bills.data?.length === 0 && <Empty title="No bills yet" body="Add rent, cards, phone and subscriptions to see what's coming." />}
+        {bills.data?.length === 0 && <Empty title="No bills yet" body="Add rent, card payments, phone and utilities to see what's coming." />}
         <ul>
           {bills.data?.map((b) => {
             const d = daysUntil(b.next_due_on);
@@ -41,6 +44,12 @@ export default function BillsPage() {
                 </div>
                 <span className="font-serif text-2xl">{formatMoney(b.amount, b.currency)}</span>
                 <Button variant="glass" size="sm" disabled={paid.isPending} onClick={() => paid.mutate(b.id)}>Mark paid</Button>
+                <ConfirmDialog
+                  title="Delete bill?"
+                  description={<>“{b.name}” and its reminders will be removed from Velora.</>}
+                  onConfirm={() => del.mutateAsync(b.id)}
+                  trigger={<Button variant="danger" size="icon" aria-label={`Delete ${b.name}`}><Trash2 className="size-4" /></Button>}
+                />
               </li>
             );
           })}

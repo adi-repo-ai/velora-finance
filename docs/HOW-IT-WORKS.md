@@ -210,6 +210,16 @@ sequenceDiagram
 
 A phone receives reminders after the user taps **Turn on reminders** on the Bills tab (permission prompt → Expo token → `push_tokens`). If sending fails, the claim is released so the next hourly run retries.
 
+**Bills vs. Subscriptions.** Both live in `recurring_items` and share reminders, autopay roll-forward and **Mark paid / Mark renewed**. A `kind` column (`bill` | `subscription`) splits them into two tabs. Bills are rent, card dues, utilities and loans. Subscriptions add an optional `website`, which shows the company logo (from the site's icon via Google's favicon service, with a letter tile as fallback), plus monthly and yearly totals (`monthlyCost`: weekly × 52 ÷ 12, yearly ÷ 12). Neither records a transaction. They are what's *coming*, and they feed **Safe to spend** and **Next up**. Removing a subscription only stops tracking it; it doesn't cancel it with the provider.
+
+**Deleting things.** Every delete (transaction, bill, subscription, goal, bank account, your whole account) opens a styled confirm popup (`ConfirmDialog`), not the browser's `confirm()`. Deleting a bank account also deletes its transactions (database cascade). **Delete my account** asks you to type `DELETE`, then calls `delete_my_account()`. That function removes your auth user, and every table cascades from it.
+
+**Accounts & settings (`/accounts`).** Profile (name, country/currency), bank accounts, sign-in & security (change email with a confirmation link, change password, connected sign-in methods), preferences, help/FAQ, sign out, and delete account.
+
+**Passwords.** Every password field has a show/hide eye. Sign-up and change-password add **Suggest strong password** (16 characters from the browser's secure random generator, every character class, no look-alike characters) and a strength meter.
+
+**Social sign-in.** Buttons from `NEXT_PUBLIC_AUTH_PROVIDERS` call `signInWithOAuth`. The provider sends the user back through Supabase to `/auth/callback`, which swaps the code for a session cookie, the same way email links work. New users get their name from the provider profile.
+
 **Insights ("Velora noticed", web Flow page).** Simple rules over your own data: budgets near or over limit, the category leading your spending, bills due within three days.
 
 ## 8. How the screens are built
@@ -247,6 +257,8 @@ A phone receives reminders after the user taps **Turn on reminders** on the Bill
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | web | API endpoint + public key |
 | `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | mobile | same |
 | `NEXT_PUBLIC_SENTRY_DSN`, `EXPO_PUBLIC_SENTRY_DSN` | both | optional error tracking |
+| `NEXT_PUBLIC_AUTH_PROVIDERS` | web | social sign-in buttons, e.g. `google,github` (default `google`) |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | web | optional "Contact support" button |
 | `CRON_SECRET`, `EXPO_ACCESS_TOKEN` | reminders function | cron auth; optional Expo push auth |
 | Vault: `project_url`, `cron_secret` | database | used by the hourly cron call |
 
@@ -259,7 +271,8 @@ Setup and deploy steps: [`README.md`](../README.md).
 | Bank data | manual entry + CSV import | Plaid (US); Account Aggregator via a regulated partner (India) |
 | Currencies | one base currency per user | FX conversion across USD/INR accounts |
 | Investments | investment accounts as balances | holdings, prices, CAS import for Indian mutual funds |
-| Sign-in | email + password | Google, Apple, phone OTP (India), MFA |
+| Sign-in | email + password; Google/GitHub/Microsoft on web | social sign-in on mobile, phone OTP (India), MFA |
 | Files | — | receipts and statements in Supabase Storage |
 | Mobile editing | add transactions/accounts, contribute to goals | also create budgets, goals, bills |
-| Account management | add | edit, archive, delete; data export; account deletion |
+| Account management | add, delete; edit profile; change email/password; delete account (web) | edit/archive accounts; data export; same on mobile |
+| Subscriptions | separate web tab with logos and totals | mobile tab |

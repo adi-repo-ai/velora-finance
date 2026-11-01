@@ -12,6 +12,7 @@ const TABS = [
   ["/budgets", "Budgets"],
   ["/goals", "Goals"],
   ["/bills", "Bills"],
+  ["/subscriptions", "Subscriptions"],
 ] as const;
 
 export function Nav() {

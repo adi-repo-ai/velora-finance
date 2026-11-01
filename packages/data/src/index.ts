@@ -1,7 +1,7 @@
-import { monthKey, type Currency } from '@velora/core';
+import { CURRENCY_BY_COUNTRY, monthKey, type Currency } from '@velora/core';
 import {
-  accountSchema, billSchema, budgetLineSchema, goalSchema, transactionSchema,
-  type AccountInput, type BillInput, type Database, type GoalInput, type TransactionInput,
+  accountSchema, billSchema, budgetLineSchema, goalSchema, profileSchema, transactionSchema,
+  type AccountInput, type BillInput, type Database, type GoalInput, type ProfileInput, type TransactionInput,
 } from '@velora/schemas';
 import { parseToMinor } from '@velora/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -26,6 +26,12 @@ export function useSupabase() {
 function must<T>({ data, error }: { data: T; error: { message: string } | null }): NonNullable<T> {
   if (error) throw new Error(error.message);
   return data as NonNullable<T>;
+}
+
+async function currentUser(sb: VeloraClient) {
+  const { data, error } = await sb.auth.getUser();
+  if (error || !data.user) throw new Error(error?.message ?? 'Not signed in');
+  return data.user;
 }
 
 export const keys = {
@@ -136,11 +142,24 @@ export function useGoals() {
   });
 }
 
-export function useBills() {
+/** Recurring payments; pass a kind to get only bills or only subscriptions (default: both). */
+export function useBills(kind?: 'bill' | 'subscription') {
   const sb = useSupabase();
   return useQuery({
-    queryKey: keys.bills,
-    queryFn: async () => must(await sb.from('recurring_items').select('*').order('next_due_on')),
+    queryKey: [...keys.bills, kind ?? 'all'],
+    queryFn: async () => {
+      const q = sb.from('recurring_items').select('*').order('next_due_on');
+      return must(await (kind ? q.eq('kind', kind) : q));
+    },
+  });
+}
+
+/** The signed-in user (email, sign-in methods) from Supabase Auth. */
+export function useAuthUser() {
+  const sb = useSupabase();
+  return useQuery({
+    queryKey: ['auth-user'],
+    queryFn: () => currentUser(sb),
   });
 }
 
@@ -287,7 +306,7 @@ export function useAddBill() {
           .from('recurring_items')
           .insert({
             name: b.name, amount: b.amount, currency, cadence: b.cadence, next_due_on: b.nextDueOn,
-            remind_days_before: b.remindDaysBefore, autopay: b.autopay,
+            remind_days_before: b.remindDaysBefore, autopay: b.autopay, kind: b.kind, website: b.website ?? null,
           })
           .select()
           .single(),
@@ -303,6 +322,61 @@ export function useMarkBillPaid() {
   return useMutation({
     mutationFn: async (id: string) => must(await sb.rpc('mark_bill_paid', { p_item: id })),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.bills }),
+  });
+}
+
+/** Deletes one row the user owns. Security rules stop anyone deleting other people's rows. */
+function useDeleteRow(table: 'accounts' | 'recurring_items' | 'goals', invalidate: () => unknown) {
+  const sb = useSupabase();
+  return useMutation({
+    mutationFn: async (id: string) => must(await sb.from(table).delete().eq('id', id)),
+    onSuccess: invalidate,
+  });
+}
+
+/** Also deletes the account's transactions (database cascade). */
+export function useDeleteAccount() {
+  return useDeleteRow('accounts', useInvalidateMoney());
+}
+
+export function useDeleteBill() {
+  const qc = useQueryClient();
+  return useDeleteRow('recurring_items', () => qc.invalidateQueries({ queryKey: keys.bills }));
+}
+
+export function useDeleteGoal() {
+  const qc = useQueryClient();
+  return useDeleteRow('goals', () => qc.invalidateQueries({ queryKey: keys.goals }));
+}
+
+export function useUpdateProfile() {
+  const sb = useSupabase();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: ProfileInput) => {
+      const p = profileSchema.parse(input);
+      return must(
+        await sb
+          .from('profiles')
+          .update({ display_name: p.displayName, home_country: p.homeCountry, base_currency: CURRENCY_BY_COUNTRY[p.homeCountry] })
+          .eq('id', (await currentUser(sb)).id)
+          .select()
+          .single(),
+      );
+    },
+    // Currency affects every report, so refresh everything.
+    onSuccess: () => qc.invalidateQueries(),
+  });
+}
+
+/** Permanently deletes the user and all their data, then signs out. */
+export function useDeleteMyAccount() {
+  const sb = useSupabase();
+  return useMutation({
+    mutationFn: async () => {
+      must(await sb.rpc('delete_my_account'));
+      await sb.auth.signOut();
+    },
   });
 }
 

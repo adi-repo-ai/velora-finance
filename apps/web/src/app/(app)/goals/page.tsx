@@ -1,12 +1,14 @@
 "use client";
 
 import { formatMoney, parseToMinor } from "@velora/core";
-import { useAddGoal, useContribute, useCurrency, useGoals } from "@velora/data";
+import { useAddGoal, useContribute, useCurrency, useDeleteGoal, useGoals } from "@velora/data";
 import { fieldErrors, goalSchema } from "@velora/schemas";
 import { useState, type FormEvent } from "react";
 import { Orb } from "@/components/orb";
 import { Empty, ErrorNote, Skeleton } from "@/components/states";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { clearErrorOnEdit, Field } from "@/components/ui/label";
@@ -32,10 +34,19 @@ export default function GoalsPage() {
 function GoalCard({ goal: g, i }: { goal: NonNullable<ReturnType<typeof useGoals>["data"]>[number]; i: number }) {
   const [amount, setAmount] = useState("");
   const contribute = useContribute();
+  const del = useDeleteGoal();
   const pct = g.saved_amount / g.target_amount;
   const minor = parseToMinor(amount);
   return (
-    <section className="glass enter flex flex-col items-center gap-4 p-8 text-center" style={{ ["--i" as string]: i + 1 }}>
+    <section className="glass enter relative flex flex-col items-center gap-4 p-8 text-center" style={{ ["--i" as string]: i + 1 }}>
+      <div className="absolute right-4 top-4">
+        <ConfirmDialog
+          title="Delete goal?"
+          description={<>“{g.name}” and its saved progress will be removed. Money in your accounts isn’t affected.</>}
+          onConfirm={() => del.mutateAsync(g.id)}
+          trigger={<Button variant="danger" size="icon" aria-label={`Delete goal ${g.name}`}><Trash2 className="size-4" /></Button>}
+        />
+      </div>
       <p className="label-mono">{g.target_date ? `By ${new Date(`${g.target_date}T00:00:00`).toLocaleDateString("en", { month: "short", year: "numeric" })}` : "Open-ended"}</p>
       <h2 className="font-serif text-4xl">{g.emoji} {g.name}</h2>
       <Orb size={210} pct={pct}><span className="font-serif text-6xl leading-none">{Math.round(pct * 100)}<span className="text-3xl">%</span></span></Orb>

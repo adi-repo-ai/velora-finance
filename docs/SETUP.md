@@ -158,6 +158,11 @@ sequenceDiagram
    |---|---|---|
    | `NEXT_PUBLIC_SUPABASE_URL` | `https://<velora-ref>.supabase.co` | `https://<velora-staging-ref>.supabase.co` |
    | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | velora's **publishable** key | velora-staging's **publishable** key |
+   | `NEXT_PUBLIC_AUTH_PROVIDERS` *(optional)* | `google` | `google` |
+   | `NEXT_PUBLIC_SUPPORT_EMAIL` *(optional)* | your support address | same |
+
+   `NEXT_PUBLIC_AUTH_PROVIDERS` lists the social sign-in buttons, comma-separated: `google`, `github`, `azure` (Microsoft), `apple`. It defaults to `google`. List only providers you've switched on in Step 4c, or the button shows an error. `NEXT_PUBLIC_SUPPORT_EMAIL` adds a "Contact support" button under Accounts → Help.
+   Give the **Deploy Previews** context the staging values too, otherwise pull-request previews can't reach a database.
 
    The values are in each Supabase project → **Project Settings → API Keys** (or the **Connect** button).
    Don't tick "Contains secret values" for these two — they are public by design. (`apps/web/netlify.toml` also tells Netlify's secret scanner to expect them; without that, deploys fail with "Secrets scanning found secrets in build".)
@@ -173,11 +178,23 @@ sequenceDiagram
    - Redirect URLs: add `https://<that site>/auth/callback` and `velora://**`.
 2. **Email sending (Brevo, free):** in Brevo create an **SMTP key**; in Supabase → **Authentication → Emails → SMTP Settings** enter Brevo's host, port, login and that key, and your verified sender address.
 
+3. **Social sign-in (4c). Google is free.**
+   1. Google Cloud Console → **APIs & Services → OAuth consent screen**: External, app name "Velora", your support email. Then **Publish app** so sign-in isn't limited to test users.
+   2. **Credentials → Create credentials → OAuth client ID** → Web application. **Authorised redirect URI:** `https://<that-project-ref>.supabase.co/auth/v1/callback`, copied from Supabase → Authentication → Sign In / Providers → Google, where it's shown as the "Callback URL".
+   3. Paste the **Client ID** and **Client secret** into Supabase → **Authentication → Sign In / Providers → Google** → Enable → Save.
+   4. Repeat for the other project. One Google client can serve both if you add both callback URLs.
+   GitHub works the same way (GitHub → Settings → Developer settings → OAuth Apps, same callback URL). Apple requires a paid Apple Developer account.
+   The client secret stays in Supabase only. Never put it in Netlify.
+
 **What this does:** confirmation and password-reset emails reach real people (Supabase's built-in sender only mails your own team), and the links in them open your site, which finishes the sign-in at `/auth/callback`.
+
+## Step 4½ — Database update (run once per project, staging first)
+
+New features (Subscriptions, profile editing, Delete my account) need one more SQL file. In each Supabase project → **SQL Editor → New query**, paste the whole of `supabase/migrations/20261101000000_subscriptions_profile_account_deletion.sql` and press **Run**. "Success. No rows returned" is right. Running it twice fails harmlessly with "column already exists".
 
 ## Step 5 — Smoke test (staging first, then production)
 
-On the website: sign up → confirm email → add an account → add a transaction → import a bank CSV → set a budget → create a goal and contribute → add a bill. Switch your device to dark mode and back. Check the **Flow** page shows your money moving.
+On the website: sign up → confirm email → add an account → add a transaction → import a bank CSV → set a budget → create a goal and contribute → add a bill → add a subscription (check the logo) → delete it (a styled confirm popup appears) → Accounts: edit your name, change password, sign in with Google. Switch your device to dark mode and back. Check the **Flow** page shows your money moving.
 
 ## Step 6 — Android app (later)
 

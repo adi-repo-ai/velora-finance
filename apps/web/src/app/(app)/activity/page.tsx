@@ -7,7 +7,9 @@ import { useState, type FormEvent } from "react";
 import { Money } from "@/components/money";
 import { MonthSwitcher } from "@/components/month-switcher";
 import { Empty, ErrorNote, Skeleton } from "@/components/states";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input, Select } from "@/components/ui/input";
 import { clearErrorOnEdit, Field } from "@/components/ui/label";
@@ -45,14 +47,16 @@ export default function ActivityPage() {
                     <p className="text-xs text-faint">{t.category?.name ?? "Uncategorised"} · {t.account?.name}{t.source === "import" && " · imported"}</p>
                   </div>
                   <Money minor={t.amount} currency={t.account?.currency ?? "USD"} sign className={cn("text-2xl", t.amount > 0 && "text-positive")} />
-                  <Button
-                    variant="danger" size="icon" aria-label={`Delete ${t.description || "transaction"}`}
-                    className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-                    disabled={del.isPending}
-                    onClick={() => confirm("Delete this transaction?") && del.mutate(t.id)}
-                  >
-                    ✕
-                  </Button>
+                  <ConfirmDialog
+                    title="Delete transaction?"
+                    description={<>“{t.merchant || t.description || "This transaction"}” will be removed and your balances and reports will update. This can’t be undone.</>}
+                    onConfirm={() => del.mutateAsync(t.id)}
+                    trigger={
+                      <Button variant="danger" size="icon" aria-label={`Delete ${t.merchant || t.description || "transaction"}`} className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100">
+                        <Trash2 className="size-4" />
+                      </Button>
+                    }
+                  />
                 </li>
               ))}
             </ul>

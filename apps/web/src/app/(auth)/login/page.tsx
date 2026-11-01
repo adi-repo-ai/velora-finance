@@ -4,9 +4,11 @@ import { fieldErrors, signInSchema } from "@velora/schemas";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { OAuthButtons } from "@/components/oauth-buttons";
 import { ErrorNote } from "@/components/states";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { clearErrorOnEdit, Field } from "@/components/ui/label";
 import { getSupabase } from "@/lib/supabase/client";
 
@@ -31,8 +33,9 @@ export default function LoginPage() {
   return (
     <form onSubmit={submit} className="glass enter grid gap-5 p-8" noValidate onChange={clearErrorOnEdit(setErrors)}>
       <h1 className="font-serif text-4xl">Welcome <em className="text-gold-2">back.</em></h1>
+      <OAuthButtons />
       <Field id="email" label="Email" error={errors.email}><Input id="email" name="email" type="email" autoComplete="email" aria-invalid={!!errors.email} /></Field>
-      <Field id="password" label="Password" error={errors.password}><Input id="password" name="password" type="password" autoComplete="current-password" aria-invalid={!!errors.password} /></Field>
+      <Field id="password" label="Password" error={errors.password}><PasswordInput id="password" name="password" autoComplete="current-password" aria-invalid={!!errors.password} /></Field>
       {failure && <ErrorNote error={failure} />}
       <Button type="submit" size="lg" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</Button>
       <p className="text-center text-sm text-muted">New to Velora? <Link href="/signup" className="font-medium text-gold-2 underline-offset-4 hover:underline">Create an account</Link></p>

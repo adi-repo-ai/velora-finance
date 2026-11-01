@@ -59,6 +59,7 @@ export type Database = {
         {
           id: string; user_id: string; name: string; amount: number; currency: Enums['currency']; cadence: Enums['cadence'];
           next_due_on: string; remind_days_before: number; autopay: boolean; created_at: string;
+          kind: 'bill' | 'subscription'; website: string | null;
         },
         'name' | 'amount' | 'currency' | 'next_due_on'
       >;
@@ -85,6 +86,7 @@ export type Database = {
       net_worth_history: { Args: { p_months?: number }; Returns: { month: string; net_worth: number }[] };
       contribute_to_goal: { Args: { p_goal: string; p_amount: number }; Returns: Database['public']['Tables']['goals']['Row'] };
       mark_bill_paid: { Args: { p_item: string }; Returns: Database['public']['Tables']['recurring_items']['Row'] };
+      delete_my_account: { Args: Record<string, never>; Returns: undefined };
     };
     Enums: Enums;
     CompositeTypes: Record<never, never>;

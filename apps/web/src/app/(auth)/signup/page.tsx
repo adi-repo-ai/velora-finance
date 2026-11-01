@@ -4,9 +4,11 @@ import { fieldErrors, signUpSchema } from "@velora/schemas";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { OAuthButtons } from "@/components/oauth-buttons";
 import { ErrorNote } from "@/components/states";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { clearErrorOnEdit, Field } from "@/components/ui/label";
 import { getSupabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -49,6 +51,7 @@ export default function SignUpPage() {
   return (
     <form onSubmit={submit} className="glass enter grid gap-5 p-8" noValidate onChange={clearErrorOnEdit(setErrors)}>
       <h1 className="font-serif text-4xl">Open your <em className="text-gold-2">vault.</em></h1>
+      <OAuthButtons />
       <Field id="displayName" label="Your name" error={errors.displayName}><Input id="displayName" name="displayName" autoComplete="given-name" aria-invalid={!!errors.displayName} /></Field>
       <div className="grid gap-2">
         <span className="label-mono" id="country-label">Where you bank</span>
@@ -64,7 +67,7 @@ export default function SignUpPage() {
         </div>
       </div>
       <Field id="email" label="Email" error={errors.email}><Input id="email" name="email" type="email" autoComplete="email" aria-invalid={!!errors.email} /></Field>
-      <Field id="password" label="Password" error={errors.password}><Input id="password" name="password" type="password" autoComplete="new-password" aria-invalid={!!errors.password} /></Field>
+      <Field id="password" label="Password" error={errors.password}><PasswordInput id="password" name="password" autoComplete="new-password" suggest aria-invalid={!!errors.password} /></Field>
       {failure && <ErrorNote error={failure} />}
       <Button type="submit" size="lg" disabled={busy}>{busy ? "Creating…" : "Create account"}</Button>
       <p className="text-center text-sm text-muted">Already have one? <Link href="/login" className="font-medium text-gold-2 underline-offset-4 hover:underline">Sign in</Link></p>

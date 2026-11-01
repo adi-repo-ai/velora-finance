@@ -79,4 +79,39 @@ end $$;
 reset role; set role anon;
 do $$ begin assert (select count(*) from accounts) = 0, 'anon'; end $$;
 reset role;
+
+-- 7. Subscriptions: kind and website are validated
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+insert into recurring_items (name, amount, currency, next_due_on, kind, website) values ('Netflix', 64900, 'USD', now()::date + 5, 'subscription', 'netflix.com');
+do $$ begin
+  assert (select count(*) from recurring_items where kind = 'subscription') = 1, 'subscription saved';
+  begin insert into recurring_items (name, amount, currency, next_due_on, kind) values ('x', 1, 'USD', now(), 'gift');
+    raise exception 'FAIL: bad kind allowed'; exception when check_violation then null; end;
+  begin insert into recurring_items (name, amount, currency, next_due_on, website) values ('x', 1, 'USD', now(), 'https://netflix.com/');
+    raise exception 'FAIL: non-domain website allowed'; exception when check_violation then null; end;
+end $$;
+
+-- 8. Account deletion: anon can't call it; a user deletes only themselves, with all their data
+reset role; set role anon;
+do $$ begin
+  begin perform public.delete_my_account(); raise exception 'FAIL: anon could delete';
+  exception when insufficient_privilege then null; end;
+end $$;
+reset role; set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select public.delete_my_account();
+reset role;
+do $$ begin
+  assert not exists (select 1 from auth.users where id = '11111111-1111-1111-1111-111111111111'), 'alex deleted';
+  assert not exists (select 1 from accounts where user_id = '11111111-1111-1111-1111-111111111111'), 'alex data cascaded';
+  assert not exists (select 1 from recurring_items where user_id = '11111111-1111-1111-1111-111111111111'), 'alex bills cascaded';
+  assert exists (select 1 from auth.users where id = '22222222-2222-2222-2222-222222222222'), 'priya untouched';
+  assert (select count(*) from transactions where user_id = '22222222-2222-2222-2222-222222222222') = 2, 'priya data untouched';
+end $$;
+
+-- 9. OAuth sign-up name fallback
+insert into auth.users values ('33333333-3333-3333-3333-333333333333', '{"full_name":"Sam Lee"}');
+do $$ begin assert (select display_name from profiles where id = '33333333-3333-3333-3333-333333333333') = 'Sam Lee', 'full_name used'; end $$;
+
 select 'ALL RLS TESTS PASSED' as result;

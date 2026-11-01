@@ -84,3 +84,45 @@ describe('budget', () => {
     expect(safeToSpendToday({ remainingBudget: 1000, billsDue: 2000, today })).toBe(0);
   });
 });
+
+import { domainFromInput, monthlyCost } from './index';
+
+describe('recurring', () => {
+  it('normalises cost to per month', () => {
+    expect(monthlyCost(1200, 'monthly')).toBe(1200);
+    expect(monthlyCost(1200, 'yearly')).toBe(100);
+    expect(monthlyCost(1200, 'weekly')).toBe(5200);
+  });
+  it('cleans website input into a domain', () => {
+    expect(domainFromInput('https://www.Netflix.com/in/')).toBe('netflix.com');
+    expect(domainFromInput('open.spotify.com')).toBe('open.spotify.com');
+    expect(domainFromInput('hotstar.com:443/x?y')).toBe('hotstar.com');
+    expect(domainFromInput('netflix')).toBeNull();
+    expect(domainFromInput('')).toBeNull();
+  });
+});
+
+import { generatePassword, passwordStrength } from './index';
+
+describe('password', () => {
+  it('generates strong passwords with every character class', () => {
+    for (let i = 0; i < 50; i++) {
+      const pw = generatePassword();
+      expect(pw).toHaveLength(16);
+      expect(pw).toMatch(/[A-Z]/);
+      expect(pw).toMatch(/[a-z]/);
+      expect(pw).toMatch(/\d/);
+      expect(pw).toMatch(/[^A-Za-z0-9]/);
+      expect(pw).not.toMatch(/[0O1lI]/);
+    }
+    expect(new Set(Array.from({ length: 20 }, () => generatePassword())).size).toBe(20);
+  });
+
+  it('rates strength', () => {
+    expect(passwordStrength('abc').label).toBe('Too short');
+    expect(passwordStrength('password1').label).toBe('Weak');
+    expect(passwordStrength('aaaaaaaaaaaa').score).toBe(1);
+    expect(passwordStrength('Sunset-river-42').label).toBe('Strong');
+    expect(passwordStrength(generatePassword()).label).toBe('Strong');
+  });
+});
