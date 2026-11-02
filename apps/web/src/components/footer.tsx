@@ -7,7 +7,7 @@ async function year() {
 }
 
 const COLUMNS = [
-  ["Product", [["/", "Wealth"], ["/flow", "Flow"], ["/activity", "Activity"], ["/budgets", "Budgets"], ["/goals", "Goals"], ["/bills", "Bills"], ["/subscriptions", "Subscriptions"]]],
+  ["Product", [["/", "Pulse"], ["/activity", "Activity"], ["/plan", "Plan"], ["/bills", "Bills"], ["/subscriptions", "Subscriptions"], ["/wealth", "Wealth"]]],
   ["Account", [["/accounts#profile", "Profile"], ["/accounts#accounts", "Bank accounts"], ["/accounts#security", "Sign-in & security"], ["/accounts#help", "Help & FAQ"]]],
   ["Legal", [["/privacy", "Privacy policy"], ["/terms", "Terms of service"]]],
 ] as const;

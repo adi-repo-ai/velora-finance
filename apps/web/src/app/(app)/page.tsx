@@ -1,217 +1,240 @@
 "use client";
 
-import { budgetStatus, formatCompact, formatMoney, monthKey, safeToSpendToday, splitCents } from "@velora/core";
-import { useAccounts, useBills, useBudget, useCurrency, useGoals, useNetWorth } from "@velora/data";
+import { formatMoney, monthKey } from "@velora/core";
+import { useAccounts, useBills, useBudget, useCurrency, useGoals, useMarkBillPaid, useMonthSummary, useProfile, useTransactions } from "@velora/data";
+import { ArrowRight, Check, CircleDashed, FileUp, Plus, Repeat } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-import { HeroMoney } from "@/components/money";
-import { NetWorthChart } from "@/components/net-worth-chart";
-import { Orb } from "@/components/orb";
-import { Rings } from "@/components/rings";
-import { Empty, ErrorNote, Skeleton } from "@/components/states";
+import { useSyncExternalStore, type ReactNode } from "react";
+import { BrandLogo } from "@/components/brand-logo";
+import { CubeLoader } from "@/components/cube-loader";
+import { HeroMoney, Money } from "@/components/money";
 import { Button } from "@/components/ui/button";
+import { useSafeToSpend } from "@/components/use-safe-to-spend";
 import { cn } from "@/lib/utils";
 
-const RANGES = [["6M", 6], ["1Y", 12], ["5Y", 60]] as const;
+const noop = () => () => {};
+const daysUntil = (iso: string) => Math.ceil((new Date(`${iso}T00:00:00`).getTime() - new Date(new Date().toDateString()).getTime()) / 86_400_000);
+const greeting = () => { const h = new Date().getHours(); return h < 5 ? "Still up" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; };
 
-export default function WealthPage() {
-  const currency = useCurrency();
-  const [months, setMonths] = useState(12);
+/** Pulse: the first screen after sign-in. What you can spend today, what's due, and how the month is going. */
+export default function PulsePage() {
+  // Greeting, date and data are all client-side; render after hydration so the server and first paint agree.
+  const hydrated = useSyncExternalStore(noop, () => true, () => false);
+  if (!hydrated) return <CubeLoader label="Taking your pulse" className="min-h-[60vh]" />;
+  return <Pulse />;
+}
+
+function Pulse() {
+  const { data: profile } = useProfile();
   const accounts = useAccounts();
-  const history = useNetWorth(months);
-
-  if (accounts.error) return <ErrorNote error={accounts.error} />;
-  if (accounts.data && accounts.data.length === 0) {
-    return (
-      <section className="glass enter mx-auto max-w-xl">
-        <Empty
-          title="Let's map your money"
-          body="Add a bank account, card or cash wallet with today's balance. Everything else — net worth, budgets, insights — builds from there."
-          action={{ href: "/accounts", label: "Add your first account" }}
-        />
-      </section>
-    );
-  }
-
-  const points = history.data ?? [];
-  const now = points.at(-1)?.net_worth ?? 0;
-  const delta = now - (points[0]?.net_worth ?? 0);
-  const base = accounts.data?.filter((a) => a.currency === currency) ?? [];
+  const firstName = profile?.display_name?.trim().split(/\s+/)[0];
+  const date = new Date().toLocaleDateString("en", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
   return (
     <div className="grid gap-6">
-      <div className="grid gap-6 lg:grid-cols-[1.35fr_1fr]">
-        <section className="glass enter flex min-h-[460px] flex-col p-8 sm:p-10" style={{ ["--i" as string]: 1 }}>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <p className="label-mono">Total net worth · {currency} · {base.length} accounts</p>
-            <div role="group" aria-label="Range" className="flex gap-1 rounded-full border border-line p-1">
-              {RANGES.map(([label, m]) => (
-                <button
-                  key={label}
-                  onClick={() => setMonths(m)}
-                  aria-pressed={months === m}
-                  className={cn("rounded-full px-3 py-1.5 font-mono text-[11px] text-faint", months === m && "bg-gradient-to-b from-gold-1 to-gold-2 text-on-gold")}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+      <section className="glass enter grid gap-8 p-8 sm:p-10 lg:grid-cols-[1.2fr_1fr] lg:items-end" style={{ ["--i" as string]: 1 }}>
+        <div>
+          <p className="label-mono">{date}</p>
+          <h1 className="mt-3 font-serif text-[clamp(44px,5.5vw,72px)] leading-[0.95]">
+            {greeting()}{firstName ? <>, <em className="text-gold-2">{firstName}.</em></> : "."}
+          </h1>
+          <p className="mt-3 max-w-md text-muted">Here’s the pulse of your money today.</p>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <Button asChild><Link href="/activity"><Plus className="size-4" aria-hidden />Add transaction</Link></Button>
+            <Button asChild variant="glass"><Link href="/activity"><FileUp className="size-4" aria-hidden />Import statement</Link></Button>
+            <Button asChild variant="glass"><Link href="/subscriptions"><Repeat className="size-4" aria-hidden />Add subscription</Link></Button>
           </div>
-          {history.isPending ? (
-            <Skeleton className="mt-6 h-28 w-2/3" />
-          ) : (
-            <HeroMoney minor={now} currency={currency} className="mt-5 block text-[clamp(64px,9vw,128px)] leading-[.9]" />
-          )}
-          <div className="mt-4 flex flex-wrap items-center gap-4 text-[15px] text-muted">
-            <span className={cn("rounded-full border border-line bg-surface/50 px-3 py-1 font-mono text-xs", delta >= 0 ? "text-positive" : "text-negative")}>
-              {delta >= 0 ? "▲" : "▼"} {formatMoney(Math.abs(delta), currency, { cents: true })}
-            </span>
-            <span>past {RANGES.find(([, m]) => m === months)?.[0]}</span>
+        </div>
+        <SafeToSpend />
+      </section>
+
+      {accounts.data?.length === 0 ? <GettingStarted /> : (
+        <>
+          <div className="grid gap-6 lg:grid-cols-3">
+            <DueThisWeek />
+            <ThisMonth />
+            <Recent />
           </div>
-          <div className="mt-6 min-h-[220px] flex-1">{points.length > 1 && <NetWorthChart data={points} currency={currency} />}</div>
-        </section>
-        <Vault />
-      </div>
-      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        <GoalTile />
-        <AllocationTile />
-        <NextBillTile />
-        <SafeToSpendTile />
-      </div>
+          <div className="grid gap-6 md:grid-cols-2">
+            <NetWorth />
+            <TopGoal />
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-const CARD_FINISH = [
-  "bg-[linear-gradient(135deg,#2c2c33,#0b0b0e_55%,#1d1d22)] text-[#e9e2d2]",
-  "bg-[conic-gradient(from_140deg_at_30%_40%,#ffd3f1,#c6f4ff,#d6ffd9,#fff2b8,#e3c9ff,#ffd3f1)] text-[#2b2340]",
-  "bg-[linear-gradient(130deg,#fbe8bf,#c69655_45%,#f3d9a2_72%,#9c6f37)] text-[#3a2610]",
-];
-
-function Vault() {
-  const currency = useCurrency();
-  const { data: accounts = [] } = useAccounts();
-  const assets = accounts.filter((a) => a.currency === currency && a.balance > 0).reduce((s, a) => s + a.balance, 0);
-  const owed = accounts.filter((a) => a.currency === currency && a.balance < 0).reduce((s, a) => s + a.balance, 0);
-  const top = accounts.slice(0, 3);
+function Card({ title, link, i, children, className }: { title: string; link?: [string, string]; i: number; children: ReactNode; className?: string }) {
   return (
-    <section className="glass enter flex min-h-[460px] flex-col overflow-hidden p-8" style={{ ["--i" as string]: 2 }}>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="label-mono">The vault</p>
-          <h2 className="mt-1.5 font-serif text-[34px] leading-tight">
-            {accounts.length} {accounts.length === 1 ? "account" : "accounts"}, <em className="text-gold-2">one view.</em>
-          </h2>
-        </div>
-        <Button variant="glass" size="sm" asChild><Link href="/accounts#accounts">{accounts.length > 3 ? `See all ${accounts.length}` : "Manage"}</Link></Button>
+    <section className={cn("glass enter flex flex-col p-7", className)} style={{ ["--i" as string]: i }}>
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="label-mono">{title}</h2>
+        {link && <Link href={link[0]} className="flex items-center gap-1 text-sm font-medium text-gold-2 hover:underline">{link[1]}<ArrowRight className="size-3.5" aria-hidden /></Link>}
       </div>
-      <div className="relative flex-1 [perspective:1500px]" aria-hidden>
-        <div className="absolute left-1/2 top-[60%] h-28 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,rgb(90_60_20/.3),transparent)] blur-xl" />
-        <div className="absolute left-1/2 top-[46%] h-[200px] w-[316px] max-sm:scale-[.72] [transform:translate(-50%,-50%)_rotateX(56deg)_rotateZ(-34deg)] [transform-style:preserve-3d]">
-          {[...top].reverse().map((a, i) => (
-            <div
-              key={a.id}
-              className={cn("absolute inset-0 flex flex-col justify-between rounded-[18px] p-5 font-mono text-xs tracking-[.12em] shadow-[0_30px_50px_-10px_rgb(0_0_0/.45),inset_0_1px_0_rgb(255_255_255/.35)] motion-safe:animate-[float_6s_ease-in-out_infinite]", CARD_FINISH[top.length - 1 - i])}
-              style={{ transform: `translateZ(${i * 46}px)`, animationDelay: `${i * -0.4}s`, ["--z" as string]: `${i * 46}px` }}
-            >
-              <div className="flex justify-between"><span className="font-serif text-xl tracking-normal normal-case">Velora</span><span className="text-[10px] uppercase opacity-70">{a.type}</span></div>
-              <div className="h-8 w-11 rounded-md bg-gradient-to-br from-[#f6dda8] to-[#b98a4c]" />
-              <div className="flex justify-between uppercase"><span>•••• {a.mask ?? "0000"}</span><span className="text-[10px]">{a.name.slice(0, 18)}</span></div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <dl className="grid grid-cols-3 gap-3">
-        {[["Assets", formatCompact(assets, currency)], ["Owed", formatCompact(-owed, currency)], ["Accounts", String(accounts.length)]].map(([k, v]) => (
-          <div key={k}><dt className="label-mono">{k}</dt><dd className="mt-1 font-serif text-2xl">{v}</dd></div>
-        ))}
-      </dl>
+      <div className="mt-4 flex flex-1 flex-col">{children}</div>
     </section>
   );
 }
 
-function Tile({ i, children, className }: { i: number; children: React.ReactNode; className?: string }) {
-  return <section className={cn("glass enter flex min-h-[226px] flex-col p-6", className)} style={{ ["--i" as string]: i }}>{children}</section>;
-}
-
-function GoalTile() {
-  const { data: goals = [] } = useGoals();
-  const g = goals[0];
-  if (!g) return <Tile i={3}><p className="label-mono">Goals</p><Empty title="Save for something" body="Trips, a cushion, a home." action={{ href: "/goals", label: "New goal" }} /></Tile>;
-  const pct = g.saved_amount / g.target_amount;
+function SafeToSpend() {
+  const { safe, hasBudget, daysLeft, currency } = useSafeToSpend();
   return (
-    <Tile i={3} className="flex-row items-center gap-5">
-      <Orb size={150} pct={pct}><span className="font-serif text-4xl">{Math.round(pct * 100)}%</span></Orb>
-      <div className="min-w-0">
-        <p className="label-mono">{g.emoji} {g.name}</p>
-        <p className="mt-2 font-serif text-4xl">{formatCompact(g.saved_amount, g.currency)}</p>
-        <p className="mt-1 text-[13px] text-muted">of {formatMoney(g.target_amount, g.currency)}</p>
-        <Link href="/goals" className="mt-3 inline-block text-sm font-medium text-gold-2 hover:underline">{goals.length > 1 ? `See all ${goals.length} goals →` : "Open goals →"}</Link>
-      </div>
-    </Tile>
-  );
-}
-
-function AllocationTile() {
-  const currency = useCurrency();
-  const { data: accounts = [] } = useAccounts();
-  const pos = accounts.filter((a) => a.currency === currency && a.balance > 0);
-  const total = pos.reduce((s, a) => s + a.balance, 0) || 1;
-  const share = (types: string[]) => pos.filter((a) => types.includes(a.type)).reduce((s, a) => s + a.balance, 0) / total;
-  const parts = [
-    ["Investments", share(["investment"]), "gold-1"],
-    ["Cash & bank", share(["checking", "savings", "cash", "wallet"]), "sky"],
-    ["Other", share(["credit", "loan"]), "lilac"],
-  ] as const;
-  return (
-    <Tile i={4} className="flex-row items-center gap-5">
-      <Rings size={140} parts={parts.map(([, v, c]) => [v, c])} label="Asset allocation" />
-      <div className="grid gap-2 text-[13px]">
-        <p className="label-mono">Allocation</p>
-        {parts.map(([n, v, c]) => (
-          <p key={n}><i className="mr-2 inline-block size-2 rounded-full" style={{ background: `rgb(var(--${c}))` }} />{n} <span className="text-faint">{Math.round(v * 100)}%</span></p>
-        ))}
-      </div>
-    </Tile>
-  );
-}
-
-function NextBillTile() {
-  const { data: bills = [] } = useBills();
-  const b = bills[0];
-  if (!b) return <Tile i={5}><p className="label-mono">Next up</p><Empty title="No bills yet" body="Get reminded before rent and cards are due." action={{ href: "/bills", label: "Add a bill" }} /></Tile>;
-  const days = Math.ceil((new Date(`${b.next_due_on}T00:00:00`).getTime() - new Date(new Date().toDateString()).getTime()) / 86_400_000);
-  const { whole, cents } = splitCents(b.amount, b.currency);
-  return (
-    <Tile i={5}>
-      <p className="label-mono">Next up · {days <= 0 ? "due today" : `in ${days} day${days === 1 ? "" : "s"}`}</p>
-      <p className="mt-2 font-serif text-5xl leading-none">{whole}<em className="text-2xl text-gold-2">{cents}</em></p>
-      <p className="mt-2 text-sm">{b.name}</p>
-      <div className="mt-auto flex justify-between pt-4 label-mono"><span>{b.autopay ? "Autopay on" : "Manual"}</span><Link href="/bills" className="hover:text-text">See all {bills.length} →</Link></div>
-    </Tile>
-  );
-}
-
-function SafeToSpendTile() {
-  const currency = useCurrency();
-  const { data: lines = [] } = useBudget(monthKey());
-  const { data: bills = [] } = useBills();
-  const remaining = lines.reduce((s, l) => s + Math.max(budgetStatus(l).remaining, 0), 0);
-  const end = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().slice(0, 10);
-  const billsDue = bills.filter((b) => b.currency === currency && b.next_due_on <= end && !b.autopay).reduce((s, b) => s + b.amount, 0);
-  const safe = safeToSpendToday({ remainingBudget: remaining, billsDue });
-  const { whole, cents } = splitCents(safe, currency);
-  return (
-    <Tile i={6}>
+    <div className="rounded-[26px] bg-surface/55 p-6 shadow-[inset_0_0_0_1px_rgb(23_20_15/.05)]">
       <p className="label-mono">Safe to spend today</p>
-      {lines.length ? (
+      {hasBudget ? (
         <>
-          <p className="mt-2 font-serif text-5xl leading-none">{whole}<em className="text-2xl text-gold-2">{cents}</em></p>
-          <p className="mt-2 text-sm leading-relaxed text-muted">What&rsquo;s left in this month&rsquo;s budgets after upcoming bills, spread over the remaining days.</p>
+          <HeroMoney minor={safe} currency={currency} className="mt-3 text-[clamp(48px,6vw,76px)]" />
+          <p className="mt-2 text-sm text-muted">Left in this month’s budgets after upcoming bills, spread over {daysLeft} {daysLeft === 1 ? "day" : "days"}.</p>
         </>
       ) : (
-        <Empty title="Set a budget" body="We'll work out a daily number for you." action={{ href: "/budgets", label: "Create budget" }} />
+        <>
+          <p className="mt-3 font-serif text-3xl leading-tight">Set a budget to get your daily number.</p>
+          <Button asChild variant="glass" className="mt-4"><Link href="/plan#budgets">Create a budget</Link></Button>
+        </>
       )}
-    </Tile>
+    </div>
+  );
+}
+
+function DueThisWeek() {
+  const { data: items = [] } = useBills();
+  const paid = useMarkBillPaid();
+  const due = items.filter((b) => daysUntil(b.next_due_on) <= 7);
+  return (
+    <Card title="Due this week" link={["/bills", "All bills"]} i={2}>
+      {due.length === 0 ? <p className="text-sm text-muted">Nothing due in the next 7 days. 🎉</p> : (
+        <ul className="grid gap-1">
+          {due.slice(0, 5).map((b) => {
+            const d = daysUntil(b.next_due_on);
+            return (
+              <li key={b.id} className="flex items-center gap-3 rounded-2xl p-1.5">
+                <BrandLogo name={b.name} domain={b.website} src={b.logo} className="size-9 rounded-xl" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{b.name}</span>
+                  <span className={cn("text-xs text-muted", d < 0 && "text-negative", d >= 0 && d <= 1 && "text-gold-2")}>{d < 0 ? `${-d}d overdue` : d === 0 ? "Today" : d === 1 ? "Tomorrow" : `In ${d} days`}</span>
+                </span>
+                <span className="font-serif text-lg">{formatMoney(b.amount, b.currency)}</span>
+                <button type="button" onClick={() => paid.mutate(b.id)} disabled={paid.isPending} aria-label={`Mark ${b.name} ${b.kind === "subscription" ? "renewed" : "paid"}`} title={b.kind === "subscription" ? "Mark renewed" : "Mark paid"}
+                  className="grid size-8 place-items-center rounded-full text-muted transition hover:bg-positive/10 hover:text-positive">
+                  <Check className="size-4" aria-hidden />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {due.length > 5 && <p className="mt-2 text-xs text-muted">+{due.length - 5} more · <Link href="/subscriptions" className="text-gold-2 hover:underline">subscriptions</Link></p>}
+    </Card>
+  );
+}
+
+function ThisMonth() {
+  const currency = useCurrency();
+  const month = monthKey();
+  const { data: s } = useMonthSummary(month);
+  const { data: lines = [] } = useBudget(month);
+  const budgeted = lines.reduce((t, l) => t + l.budgeted, 0);
+  const spentInBudgets = lines.reduce((t, l) => t + l.spent, 0);
+  const pct = budgeted ? Math.min(100, Math.round((spentInBudgets / budgeted) * 100)) : 0;
+  const top = (s?.rows ?? []).filter((r) => r.total < 0 && r.kind === "expense").sort((a, b) => a.total - b.total)[0];
+  return (
+    <Card title={new Date().toLocaleDateString("en", { month: "long" }) + " so far"} link={["/activity", "Cash flow"]} i={3}>
+      <div className="grid grid-cols-2 gap-4">
+        <div><p className="text-xs text-muted">Money in</p><Money minor={s?.income ?? 0} currency={currency} className="font-serif text-2xl text-positive" /></div>
+        <div><p className="text-xs text-muted">Money out</p><Money minor={s?.spent ?? 0} currency={currency} className="font-serif text-2xl" /></div>
+      </div>
+      {budgeted > 0 ? (
+        <div className="mt-5">
+          <div className="flex justify-between text-xs text-muted"><span>Budgets used</span><span>{pct}%</span></div>
+          <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-text/[.07]">
+            <div className={cn("h-full rounded-full", pct >= 100 ? "bg-negative" : pct >= 85 ? "bg-gold-2" : "bg-gradient-to-r from-gold-1 to-gold-2")} style={{ width: `${Math.max(pct, 2)}%` }} />
+          </div>
+          <p className="mt-1.5 text-xs text-muted">{formatMoney(spentInBudgets, currency)} of {formatMoney(budgeted, currency)}</p>
+        </div>
+      ) : <Link href="/plan#budgets" className="mt-5 text-sm font-medium text-gold-2 hover:underline">Set monthly budgets →</Link>}
+      {top && <p className="mt-auto pt-4 text-sm"><span className="text-muted">Biggest category:</span> {top.icon} {top.name} · {formatMoney(-top.total, currency)}</p>}
+    </Card>
+  );
+}
+
+function Recent() {
+  const { data: txns = [] } = useTransactions(monthKey());
+  return (
+    <Card title="Recent activity" link={["/activity", "See all"]} i={4}>
+      {txns.length === 0 ? <p className="text-sm text-muted">No transactions this month yet.</p> : (
+        <ul className="grid gap-2.5">
+          {txns.slice(0, 5).map((t) => (
+            <li key={t.id} className="flex items-center gap-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-surface/60 text-base" aria-hidden>{t.category?.icon ?? "•"}</span>
+              <span className="min-w-0 flex-1"><span className="block truncate text-sm">{t.merchant || t.description || t.category?.name || "Transaction"}</span><span className="text-xs text-muted">{new Date(`${t.posted_on}T00:00:00`).toLocaleDateString("en", { day: "numeric", month: "short" })}</span></span>
+              <Money minor={t.amount} currency={t.account?.currency ?? "USD"} sign className={cn("text-sm font-medium", t.amount > 0 && "text-positive")} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+function NetWorth() {
+  const currency = useCurrency();
+  const { data: accounts = [] } = useAccounts();
+  const mine = accounts.filter((a) => a.currency === currency);
+  const total = mine.reduce((s, a) => s + a.balance, 0);
+  return (
+    <Card title="Net worth" link={["/wealth", "Wealth"]} i={5}>
+      <HeroMoney minor={total} currency={currency} animate={false} className="text-5xl" />
+      <p className="mt-2 text-sm text-muted">Across {mine.length} {currency} {mine.length === 1 ? "account" : "accounts"}.</p>
+    </Card>
+  );
+}
+
+function TopGoal() {
+  const { data: goals = [] } = useGoals();
+  const g = goals[0];
+  if (!g) {
+    return (
+      <Card title="Goals" link={["/plan#goals", "Plan"]} i={6}>
+        <p className="text-sm text-muted">Saving for a trip, a cushion or a home? Give it a target and watch it fill.</p>
+        <Button asChild variant="glass" className="mt-4 w-fit"><Link href="/plan#goals">Create a goal</Link></Button>
+      </Card>
+    );
+  }
+  const pct = Math.min(100, Math.round((g.saved_amount / g.target_amount) * 100));
+  return (
+    <Card title="Top goal" link={["/plan#goals", goals.length > 1 ? `All ${goals.length} goals` : "Plan"]} i={6}>
+      <p className="font-serif text-3xl">{g.emoji} {g.name}</p>
+      <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-text/[.07]"><div className="h-full rounded-full bg-gradient-to-r from-gold-1 to-gold-2" style={{ width: `${Math.max(pct, 2)}%` }} /></div>
+      <p className="mt-2 text-sm text-muted">{formatMoney(g.saved_amount, g.currency)} of {formatMoney(g.target_amount, g.currency)} · {pct}%</p>
+    </Card>
+  );
+}
+
+/** Shown until the first account exists: the four steps that make Velora useful. */
+function GettingStarted() {
+  const { data: accounts = [] } = useAccounts();
+  const { data: bills = [] } = useBills();
+  const { data: lines = [] } = useBudget(monthKey());
+  const steps: [string, string, string, boolean][] = [
+    ["Add your main account", "Today’s balance is enough to start.", "/accounts#accounts", accounts.length > 0],
+    ["Import a statement", "Excel or CSV from your bank; you review before saving.", "/activity", false],
+    ["Set monthly budgets", "Unlocks your daily safe-to-spend number.", "/plan#budgets", lines.length > 0],
+    ["Add bills & subscriptions", "Get reminded before anything renews.", "/subscriptions", bills.length > 0],
+  ];
+  return (
+    <section className="glass enter p-8 sm:p-10" style={{ ["--i" as string]: 2 }}>
+      <h2 className="font-serif text-4xl">Let’s set up your <em className="text-gold-2">vault.</em></h2>
+      <ol className="mt-6 grid gap-3 md:grid-cols-2">
+        {steps.map(([title, body, href, done], n) => (
+          <li key={title}>
+            <Link href={href} className="flex items-start gap-4 rounded-3xl bg-surface/50 p-5 transition hover:bg-surface/80">
+              {done ? <Check className="mt-0.5 size-5 shrink-0 text-positive" aria-label="Done" /> : <CircleDashed className="mt-0.5 size-5 shrink-0 text-gold-2" aria-hidden />}
+              <span><span className="font-medium">{n + 1}. {title}</span><span className="mt-1 block text-sm text-muted">{body}</span></span>
+            </Link>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }

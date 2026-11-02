@@ -14,12 +14,12 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { clearErrorOnEdit, Field } from "@/components/ui/label";
 
-export default function GoalsPage() {
+export function GoalsPanel() {
   const goals = useGoals();
   return (
     <div className="grid gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4 px-2">
-        <div><p className="label-mono">Goals</p><h1 className="mt-2 font-serif text-6xl leading-none">Save for <em className="text-gold-2">what matters.</em></h1></div>
+        <div><p className="label-mono">Goals</p><h2 className="mt-2 font-serif text-6xl leading-none">Save for <em className="text-gold-2">what matters.</em></h2></div>
         <AddGoalDialog />
       </div>
       {goals.error && <ErrorNote error={goals.error} />}

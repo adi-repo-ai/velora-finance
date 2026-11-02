@@ -7,7 +7,7 @@ import { useAccounts, useAddTransaction, useCategories, useCurrency, useDeleteTr
 import { fieldErrors, transactionSchema } from "@velora/schemas";
 import { useState, type FormEvent } from "react";
 import { Money } from "@/components/money";
-import { MonthSwitcher } from "@/components/month-switcher";
+import { FlowOverview } from "@/components/flow-overview";
 import { Empty, ErrorNote, Skeleton } from "@/components/states";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,9 @@ export default function ActivityPage() {
   const groups = Map.groupBy(txns.data ?? [], (t) => t.posted_on);
 
   return (
-    <section className="glass enter mx-auto max-w-4xl p-8 sm:p-10">
+    <div className="grid gap-6">
+    <FlowOverview month={month} onChange={setMonth} />
+    <section className="glass enter p-8 sm:p-10" style={{ ["--i" as string]: 3 }}>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="label-mono">Activity</p>
@@ -34,7 +36,6 @@ export default function ActivityPage() {
         </div>
         <div className="flex gap-2"><ImportDialog /><AddTransactionDialog /></div>
       </div>
-      <div className="mt-6"><MonthSwitcher month={month} onChange={setMonth} /></div>
       <div className="mt-6">
         {txns.error && <ErrorNote error={txns.error} />}
         {txns.isPending && <div className="grid gap-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full" />)}</div>}
@@ -68,6 +69,7 @@ export default function ActivityPage() {
         ))}
       </div>
     </section>
+    </div>
   );
 }
 

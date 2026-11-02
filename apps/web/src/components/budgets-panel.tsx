@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 const BAR = { ok: "from-sky to-sky/60", near: "from-gold-1 to-gold-2", over: "from-negative to-negative/70" } as const;
 
-export default function BudgetsPage() {
+export function BudgetsPanel() {
   const [month, setMonth] = useState(monthKey());
   const currency = useCurrency();
   const budget = useBudget(month);
@@ -29,7 +29,7 @@ export default function BudgetsPage() {
       <section className="glass enter flex flex-col items-center gap-5 p-8 text-center" style={{ ["--i" as string]: 1 }}>
         <div className="w-full text-left">
           <p className="label-mono">Budgets</p>
-          <h1 className="mt-2 font-serif text-5xl leading-none">Spend with <em className="text-gold-2">intent.</em></h1>
+          <h2 className="mt-2 font-serif text-5xl leading-none">Spend with <em className="text-gold-2">intent.</em></h2>
           <div className="mt-4"><MonthSwitcher month={month} onChange={setMonth} /></div>
         </div>
         <div className="relative">

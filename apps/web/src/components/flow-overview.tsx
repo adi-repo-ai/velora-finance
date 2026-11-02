@@ -1,6 +1,6 @@
 "use client";
 
-import { budgetStatus, formatMoney, monthKey } from "@velora/core";
+import { budgetStatus, formatMoney } from "@velora/core";
 import { useBills, useBudget, useCurrency, useMonthSummary, useTransactions } from "@velora/data";
 import { useState } from "react";
 import { CashFlowSankey } from "@/components/cash-flow-sankey";
@@ -8,8 +8,8 @@ import { MonthSwitcher, monthName } from "@/components/month-switcher";
 import { Empty, ErrorNote, Skeleton } from "@/components/states";
 import { cn } from "@/lib/utils";
 
-export default function FlowPage() {
-  const [month, setMonth] = useState(monthKey());
+/** Cash-flow diagram, daily spend heat and insights for one month (top of the Activity tab). */
+export function FlowOverview({ month, onChange: setMonth }: { month: string; onChange: (m: string) => void }) {
   const currency = useCurrency();
   const summary = useMonthSummary(month);
   const s = summary.data;
@@ -23,9 +23,9 @@ export default function FlowPage() {
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div>
             <p className="label-mono">Cash flow</p>
-            <h1 className="mt-3 font-serif text-[clamp(44px,5vw,64px)] leading-none">
+            <h2 className="mt-3 font-serif text-[clamp(44px,5vw,64px)] leading-none">
               Where {monthName(month, { month: "long" })} <em className="text-gold-2">went.</em>
-            </h1>
+            </h2>
             <div className="mt-4"><MonthSwitcher month={month} onChange={setMonth} /></div>
           </div>
           {s && (
