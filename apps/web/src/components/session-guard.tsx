@@ -1,28 +1,19 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AlertDialog } from "radix-ui";
 import { Button } from "@/components/ui/button";
-import { getSupabase } from "@/lib/supabase/client";
-import { endSession, expiredReason, hasSession, idleLimit, isRemembered, lastActive, markActive, startSession } from "@/lib/session";
+import { expiredReason, hasSession, idleLimit, isRemembered, lastActive, markActive, startSession } from "@/lib/session";
+import { signOut } from "@/lib/sign-out";
 
 const WARN_MS = 2 * 60_000;
 
 /** Signs the user out after inactivity (with a 2-minute warning) or after the browser was closed. */
 export function SessionGuard() {
-  const router = useRouter();
-  const qc = useQueryClient();
   const [left, setLeft] = useState<number | null>(null);
 
   useEffect(() => {
-    async function end(reason: "idle" | "closed") {
-      endSession();
-      await getSupabase().auth.signOut();
-      qc.clear();
-      router.replace(`/login?reason=${reason}`);
-    }
+    const end = (reason: "idle" | "closed") => signOut(reason);
     if (!hasSession()) startSession(false);
     const reason = expiredReason();
     if (reason) { void end(reason); return; }
@@ -37,7 +28,7 @@ export function SessionGuard() {
       setLeft(!isRemembered() && remaining <= WARN_MS ? remaining : null);
     }, 1000);
     return () => { events.forEach((e) => window.removeEventListener(e, active)); clearInterval(tick); };
-  }, [qc, router]);
+  }, []);
 
   const secs = Math.ceil((left ?? 0) / 1000);
   return (
@@ -50,7 +41,7 @@ export function SessionGuard() {
             For your security, you’ll be signed out in <b className="font-mono text-text">{Math.floor(secs / 60)}:{String(secs % 60).padStart(2, "0")}</b> because of inactivity.
           </AlertDialog.Description>
           <div className="flex justify-center gap-2">
-            <Button variant="glass" onClick={async () => { endSession(); await getSupabase().auth.signOut(); qc.clear(); router.replace("/login"); }}>Sign out</Button>
+            <Button variant="glass" onClick={() => signOut()}>Sign out</Button>
             <Button onClick={() => { markActive(); setLeft(null); }}>Stay signed in</Button>
           </div>
         </AlertDialog.Content>

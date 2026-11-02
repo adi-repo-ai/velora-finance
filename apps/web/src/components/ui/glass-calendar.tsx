@@ -95,14 +95,22 @@ export function GlassCalendar({
               aria-label={fromIso(d).toLocaleDateString("en", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
               onClick={() => { setFocus(d); onSelect?.(d); }}
               className={cn(
-                "group relative flex min-h-11 flex-col items-center justify-start gap-0.5 rounded-2xl pb-1 pt-1.5 text-sm transition",
-                "hover:bg-surface/70 focus-visible:outline-2 focus-visible:outline-gold-1 disabled:pointer-events-none disabled:opacity-30",
+                "group relative flex min-h-11 flex-col items-center justify-start gap-0.5 rounded-2xl py-0.5 text-sm outline-none",
+                "focus-visible:[&>span:first-child]:outline-2 focus-visible:[&>span:first-child]:outline-gold-1 disabled:pointer-events-none disabled:opacity-30",
                 !inMonth && "text-faint",
-                d === today && !selected && "shadow-[inset_0_0_0_1.5px_rgb(201_155_91)]",
-                selected && "bg-gradient-to-b from-gold-1 to-gold-2 font-semibold text-on-gold shadow-[0_10px_24px_-10px_rgb(122_82_38/.8)] hover:bg-gradient-to-b",
               )}
             >
-              <span className="leading-none">{Number(d.slice(8))}</span>
+              {/* the day number sits in a small oval: gold gradient when selected, gold ring for today */}
+              <span
+                className={cn(
+                  "grid h-8 w-10 place-items-center rounded-full leading-none transition",
+                  !selected && "group-hover:bg-surface/80",
+                  d === today && !selected && "shadow-[inset_0_0_0_1.5px_rgb(201_155_91)]",
+                  selected && "bg-gradient-to-br from-[#f3d9a6] via-gold-1 to-gold-2 font-semibold text-on-gold shadow-[0_8px_18px_-8px_rgb(122_82_38/.85),inset_0_1px_0_rgb(255_255_255/.45)]",
+                )}
+              >
+                {Number(d.slice(8))}
+              </span>
               {mark && <span className="flex min-h-4 items-center justify-center">{mark}</span>}
             </button>
           );

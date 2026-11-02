@@ -5,8 +5,15 @@ import { useBills } from "@velora/data";
 import { Bell } from "lucide-react";
 import Link from "next/link";
 import { Popover } from "radix-ui";
+import { useState } from "react";
 import { BrandLogo } from "@/components/brand-logo";
 import { cn } from "@/lib/utils";
+
+const SEEN_KEY = "velora-reminders-seen";
+const keyOf = (b: { id: string; next_due_on: string }) => `${b.id}:${b.next_due_on}`;
+function readSeen(): Set<string> {
+  try { return new Set(JSON.parse(localStorage.getItem(SEEN_KEY) ?? "[]") as string[]); } catch { return new Set(); }
+}
 
 const daysUntil = (iso: string) => Math.ceil((new Date(`${iso}T00:00:00`).getTime() - new Date(new Date().toDateString()).getTime()) / 86_400_000);
 
@@ -14,16 +21,25 @@ const daysUntil = (iso: string) => Math.ceil((new Date(`${iso}T00:00:00`).getTim
 export function Notifications() {
   const { data = [] } = useBills();
   const items = data.filter((b) => b.notify && daysUntil(b.next_due_on) <= 7);
-  const urgent = items.filter((b) => daysUntil(b.next_due_on) <= 1).length;
+  // Each reminder is keyed by item + due date, so a new cycle or a new bill shows up as unseen again.
+  const [seen, setSeen] = useState<Set<string>>(readSeen);
+  const unseen = items.filter((b) => !seen.has(keyOf(b)));
+  const urgent = unseen.filter((b) => daysUntil(b.next_due_on) <= 1).length;
+  function markSeen(open: boolean) {
+    if (!open || unseen.length === 0) return;
+    const next = new Set(items.map(keyOf)); // drop keys for items no longer due, so storage stays small
+    setSeen(next);
+    try { localStorage.setItem(SEEN_KEY, JSON.stringify([...next])); } catch { /* storage blocked: badge just won't persist */ }
+  }
   return (
-    <Popover.Root>
+    <Popover.Root onOpenChange={markSeen}>
       <Popover.Trigger
-        aria-label={`Reminders: ${items.length} due this week`}
+        aria-label={`Reminders: ${items.length} due this week${unseen.length ? `, ${unseen.length} new` : ""}`}
         className="relative grid size-9 shrink-0 place-items-center rounded-full text-muted transition hover:bg-surface/70 hover:text-text"
       >
         <Bell className="size-[18px]" aria-hidden />
-        {items.length > 0 && (
-          <span className={cn("absolute -right-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full px-1 text-[10px] font-semibold leading-4 text-white", urgent ? "bg-negative" : "bg-gold-2")}>{items.length}</span>
+        {unseen.length > 0 && (
+          <span className={cn("absolute -right-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full px-1 text-[10px] font-semibold leading-4 text-white", urgent ? "bg-negative" : "bg-gold-2")}>{unseen.length}</span>
         )}
       </Popover.Trigger>
       <Popover.Portal>

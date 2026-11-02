@@ -4,7 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useProfile } from "@velora/data";
 import { useSyncExternalStore } from "react";
+import { LogOut } from "lucide-react";
 import { Notifications } from "@/components/notifications";
+import { signOut } from "@/lib/sign-out";
 import { cn } from "@/lib/utils";
 
 const noop = () => () => {};
@@ -57,6 +59,15 @@ export function Nav() {
       >
         {initial}
       </Link>
+      <button
+        type="button"
+        onClick={() => signOut()}
+        aria-label="Sign out"
+        title="Sign out"
+        className="ml-1 grid size-9 shrink-0 place-items-center rounded-full text-muted transition hover:bg-negative/10 hover:text-negative"
+      >
+        <LogOut className="size-[18px]" aria-hidden />
+      </button>
     </nav>
   );
 }

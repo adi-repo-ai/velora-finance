@@ -3,8 +3,6 @@
 import { formatMoney } from "@velora/core";
 import { useAccounts, useAddAccount, useAuthUser, useCurrency, useDeleteAccount, useDeleteMyAccount, useProfile, useUpdateProfile } from "@velora/data";
 import { accountSchema, emailChangeSchema, fieldErrors, passwordChangeSchema, profileSchema } from "@velora/schemas";
-import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import {
   Bell, Check, ChevronDown, Coins, KeyRound, Landmark, LifeBuoy, Link2, LogOut, Mail, MonitorSmartphone,
   ShieldCheck, SlidersHorizontal, Trash2, UserRound, type LucideIcon,
@@ -17,7 +15,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input, Select } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { clearErrorOnEdit, Field } from "@/components/ui/label";
-import { endSession } from "@/lib/session";
+import { signOut } from "@/lib/sign-out";
 import { getSupabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -304,21 +302,12 @@ function HelpSection() {
 }
 
 function DangerSection() {
-  const router = useRouter();
-  const qc = useQueryClient();
   const deleteMe = useDeleteMyAccount();
-
-  async function signOut() {
-    endSession();
-    await getSupabase().auth.signOut();
-    qc.clear(); // drop the previous user's cached data
-    router.replace("/login");
-  }
 
   return (
     <Section id="danger" icon={LogOut} title="Account" i={5}>
       <div className="grid gap-3">
-        <Row icon={LogOut} title="Sign out" body="Sign out of Velora on this device."><Button variant="glass" size="sm" onClick={signOut}>Sign out</Button></Row>
+        <Row icon={LogOut} title="Sign out" body="Sign out of Velora on this device."><Button variant="glass" size="sm" onClick={() => signOut()}>Sign out</Button></Row>
         <div className="flex flex-wrap items-center gap-4 rounded-3xl bg-negative/[.07] p-4 shadow-[inset_0_0_0_1px_rgb(215_85_61/.2)]">
           <Trash2 className="size-5 shrink-0 text-negative" aria-hidden />
           <div className="min-w-0 flex-1"><p className="font-medium">Delete my Velora account</p><p className="text-sm text-muted">Permanently deletes your profile, accounts, transactions, budgets, goals and bills.</p></div>
@@ -327,7 +316,7 @@ function DangerSection() {
             description="Everything in Velora will be permanently deleted. This can’t be undone."
             confirmLabel="Delete forever"
             requireText="DELETE"
-            onConfirm={async () => { await deleteMe.mutateAsync(); endSession(); qc.clear(); router.replace("/login"); }}
+            onConfirm={async () => { await deleteMe.mutateAsync(); await signOut(); }}
             trigger={<Button variant="destructive" size="sm">Delete account</Button>}
           />
         </div>
