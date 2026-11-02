@@ -12,6 +12,7 @@ import { Empty, ErrorNote, Skeleton } from "@/components/states";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input, Select } from "@/components/ui/input";
 import { clearErrorOnEdit, Field } from "@/components/ui/label";
@@ -117,7 +118,7 @@ function AddTransactionDialog() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field id="postedOn" label="Date" error={errors.postedOn}>
-                <Input id="postedOn" name="postedOn" type="date" defaultValue={new Date().toLocaleDateString("en-CA")} />
+                <DatePicker id="postedOn" name="postedOn" defaultValue={new Date().toLocaleDateString("en-CA")} />
               </Field>
               <Field id="description" label="Description">
                 <Input id="description" name="description" placeholder="e.g. Swiggy" maxLength={300} />

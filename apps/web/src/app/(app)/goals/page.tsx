@@ -9,6 +9,7 @@ import { Empty, ErrorNote, Skeleton } from "@/components/states";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { clearErrorOnEdit, Field } from "@/components/ui/label";
@@ -88,7 +89,7 @@ function AddGoalDialog() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field id="target" label={`Target (${currency})`} error={errors.target}><Input id="target" name="target" inputMode="decimal" aria-invalid={!!errors.target} /></Field>
-            <Field id="targetDate" label="By (optional)"><Input id="targetDate" name="targetDate" type="date" /></Field>
+            <Field id="targetDate" label="By (optional)"><DatePicker id="targetDate" name="targetDate" placeholder="No deadline" min={new Date().toLocaleDateString("en-CA")} /></Field>
           </div>
           {add.error && <ErrorNote error={add.error} />}
           <Button type="submit" size="lg" disabled={add.isPending}>Create goal</Button>

@@ -6,9 +6,11 @@ import { billSchema, fieldErrors, type SubscriptionCategory, type Tables } from 
 import { BellOff, ImageUp, Mail, Pencil, RefreshCw, Trash2, X } from "lucide-react";
 import { useRef, useState, type FormEvent } from "react";
 import { BrandLogo } from "@/components/brand-logo";
+import { RenewalCalendar } from "@/components/renewal-calendar";
 import { Empty, ErrorNote, Skeleton } from "@/components/states";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { fieldClass, Input, Select } from "@/components/ui/input";
 import { clearErrorOnEdit, Field } from "@/components/ui/label";
@@ -91,6 +93,8 @@ export default function SubscriptionsPage() {
           <Upcoming list={list} />
         </div>
       )}
+
+      {list.length > 0 && <RenewalCalendar items={list} title="Renews on" />}
 
       <section className="glass enter p-8 sm:p-10" style={{ ["--i" as string]: 2 }}>
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by category">
@@ -343,7 +347,7 @@ function SubscriptionDialog({ sub }: { sub?: Sub }) {
             <Field id="cadence" label="Billed"><Select id="cadence" name="cadence" defaultValue={sub?.cadence ?? "monthly"}><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option></Select></Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="nextDueOn" label="Next renewal" error={errors.nextDueOn}><Input id="nextDueOn" name="nextDueOn" type="date" defaultValue={sub?.next_due_on} aria-invalid={!!errors.nextDueOn} /></Field>
+            <Field id="nextDueOn" label="Next renewal" error={errors.nextDueOn}><DatePicker id="nextDueOn" name="nextDueOn" defaultValue={sub?.next_due_on} aria-invalid={!!errors.nextDueOn} /></Field>
             <Field id="accountEmail" label="Billing email (optional)" error={errors.accountEmail}><Input id="accountEmail" name="accountEmail" type="email" defaultValue={sub?.account_email ?? ""} placeholder="The email this plan is under" aria-invalid={!!errors.accountEmail} /></Field>
           </div>
           <Field id="description" label="Description (optional)" error={errors.description}>

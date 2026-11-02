@@ -157,3 +157,17 @@ describe('import: any statement format', () => {
     expect(guessCategory('Mystery shop', -100)).toBeNull();
   });
 });
+
+import { occurrencesInMonth } from './index';
+
+describe('occurrencesInMonth', () => {
+  it('repeats monthly, weekly and yearly items across a month', () => {
+    expect(occurrencesInMonth('2026-11-15', 'monthly', '2026-12')).toEqual(['2026-12-15']);
+    expect(occurrencesInMonth('2026-11-15', 'monthly', '2026-10')).toEqual([]);
+    expect(occurrencesInMonth('2027-01-31', 'monthly', '2027-02')).toEqual(['2027-02-28']);
+    expect(occurrencesInMonth('2026-11-03', 'weekly', '2026-11')).toEqual(['2026-11-03', '2026-11-10', '2026-11-17', '2026-11-24']);
+    expect(occurrencesInMonth('2026-10-27', 'weekly', '2026-12')).toEqual(['2026-12-01', '2026-12-08', '2026-12-15', '2026-12-22', '2026-12-29']);
+    expect(occurrencesInMonth('2027-03-10', 'yearly', '2028-03')).toEqual(['2028-03-10']);
+    expect(occurrencesInMonth('2027-03-10', 'yearly', '2027-04')).toEqual([]);
+  });
+});
