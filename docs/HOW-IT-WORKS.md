@@ -238,6 +238,8 @@ A phone receives reminders after the user taps **Turn on reminders** on the Bill
 
 **Controls.** Dropdowns are animated glass menus (Radix Select) that keep the native `<select>` API, date fields use the glass calendar, logo upload is a drag-and-drop zone, the sign-in card tilts in 3D with a light running around its edge, and loading states use the isometric gold cube loader.
 
+**Navigation (6 tabs).** **Pulse** (home, `/`) shows the date and a greeting, safe to spend today, what's due this week (with one-tap Mark paid), this month so far, recent activity, net worth and your top goal; new users see a 4-step setup checklist instead. **Activity** has the cash-flow diagram, daily spend heat and insights on top, then every transaction. **Plan** holds Budgets and Goals. **Bills**, **Subscriptions** and **Wealth** (net worth, accounts, allocation) work as before. The old `/flow`, `/budgets` and `/goals` addresses redirect to the new tabs.
+
 **Footer and legal pages.** Signed-in pages end with a footer: brand, product, account and legal links, the support email, and ©. Sign-in pages show a compact version. `/privacy` and `/terms` are public. Review their wording before launch.
 
 **Insights ("Velora noticed", web Flow page).** Simple rules over your own data: budgets near or over limit, the category leading your spending, bills due within three days.

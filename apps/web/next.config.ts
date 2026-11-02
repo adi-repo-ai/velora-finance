@@ -29,6 +29,14 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Old tabs folded into the new navigation: keep bookmarks working.
+  async redirects() {
+    return [
+      { source: "/flow", destination: "/activity", permanent: true },
+      { source: "/budgets", destination: "/plan#budgets", permanent: true },
+      { source: "/goals", destination: "/plan#goals", permanent: true },
+    ];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
