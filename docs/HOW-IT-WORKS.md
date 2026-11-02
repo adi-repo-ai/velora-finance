@@ -230,6 +230,14 @@ A phone receives reminders after the user taps **Turn on reminders** on the Bill
 
 **Security headers.** Every page is sent with a Content-Security-Policy (only this site, Supabase, and Google favicons for logos), HSTS, `X-Frame-Options: DENY`, `nosniff`, a strict referrer policy and a Permissions-Policy that blocks the camera, microphone and location. A cookie notice explains that only essential cookies are used.
 
+**Email links that land on the home page.** If Supabase can't use the requested redirect (it isn't on the project's allow-list), it sends people to the Site URL as `/?code=…`. The proxy spots a `code` on any page and forwards it to `/auth/callback`, so sign-up confirmation still completes. Still add `https://<site>/auth/callback**` to the allow-list.
+
+**Stale tabs after a deploy.** A tab opened before a new deploy can request code files that no longer exist ("Failed to load chunk"). The app reloads itself once to pick up the new version.
+
+**Subscription import and currencies.** Subscriptions → Import reads an Excel/CSV list (Name and Price are required; billing cycle, next renewal, category, website and currency are optional). Well-known services get their logo and category automatically, and every row is reviewed before saving. Each subscription has its own currency (₹ INR or $ USD). Totals show your home currency, plus a separate line for the other.
+
+**Controls.** Dropdowns are animated glass menus (Radix Select) that keep the native `<select>` API, date fields use the glass calendar, logo upload is a drag-and-drop zone, the sign-in card tilts in 3D with a light running around its edge, and loading states use the isometric gold cube loader.
+
 **Footer and legal pages.** Signed-in pages end with a footer: brand, product, account and legal links, the support email, and ©. Sign-in pages show a compact version. `/privacy` and `/terms` are public. Review their wording before launch.
 
 **Insights ("Velora noticed", web Flow page).** Simple rules over your own data: budgets near or over limit, the category leading your spending, bills due within three days.

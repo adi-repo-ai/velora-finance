@@ -1,4 +1,5 @@
 import { Footer } from "@/components/footer";
+import { TiltCard } from "@/components/tilt-card";
 
 export default function AuthLayout({ children }: LayoutProps<"/">) {
   return (
@@ -9,7 +10,7 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
           <p className="font-serif text-6xl leading-none">Velora</p>
           <p className="mt-2 text-sm text-muted">Your money, all in one place.</p>
         </div>
-        {children}
+        <TiltCard>{children}</TiltCard>
         <Footer compact />
       </div>
     </main>

@@ -171,3 +171,21 @@ describe('occurrencesInMonth', () => {
     expect(occurrencesInMonth('2027-03-10', 'yearly', '2027-04')).toEqual([]);
   });
 });
+
+import { importSubscriptionRows } from './index';
+
+describe('importSubscriptionRows', () => {
+  it('reads names, prices, cycles, dates and currencies', () => {
+    const rows = parseCsv('My subscriptions\nService,Price,Billing cycle,Next renewal,Website\nNetflix,₹649,Monthly,15/11/2026,netflix.com\nAdobe,"$239.88",Annual,2027-03-01,\nGym,45,weekly,,\n,10,,,\nBroken,abc,,,\n');
+    const r = importSubscriptionRows(rows, { dayFirst: true });
+    expect(r.rows).toEqual([
+      { name: 'Netflix', amount: 64900, cadence: 'monthly', nextDueOn: '2026-11-15', currency: 'INR', category: null, website: 'netflix.com' },
+      { name: 'Adobe', amount: 23988, cadence: 'yearly', nextDueOn: '2027-03-01', currency: 'USD', category: null, website: null },
+      { name: 'Gym', amount: 4500, cadence: 'weekly', nextDueOn: null, currency: null, category: null, website: null },
+    ]);
+    expect(r.errors.map((e) => e.line)).toEqual([6, 7]);
+  });
+  it('explains a missing header', () => {
+    expect(importSubscriptionRows([['foo', 'bar']], { dayFirst: false }).errors[0]?.reason).toMatch(/Name and a Price/);
+  });
+});

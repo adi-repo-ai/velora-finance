@@ -3,51 +3,26 @@
 import { formatMoney, monthlyCost } from "@velora/core";
 import { useAddBill, useBills, useCurrency, useDeleteBill, useMarkBillPaid, useUpdateBill } from "@velora/data";
 import { billSchema, fieldErrors, type SubscriptionCategory, type Tables } from "@velora/schemas";
-import { BellOff, ImageUp, Mail, Pencil, RefreshCw, Trash2, X } from "lucide-react";
-import { useRef, useState, type FormEvent } from "react";
+import { BellOff, Mail, Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { useState, type FormEvent } from "react";
 import { BrandLogo } from "@/components/brand-logo";
 import { RenewalCalendar } from "@/components/renewal-calendar";
+import { SubscriptionImportDialog } from "@/components/subscription-import";
 import { Empty, ErrorNote, Skeleton } from "@/components/states";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { LogoDropzone } from "@/components/ui/logo-dropzone";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { fieldClass, Input, Select } from "@/components/ui/input";
 import { clearErrorOnEdit, Field } from "@/components/ui/label";
-import { fileToLogo, LOGO_PX } from "@/lib/logo";
+import { CATEGORIES, POPULAR } from "@/lib/subscriptions";
 import { cn } from "@/lib/utils";
 
 type Sub = Tables<"recurring_items">;
 
-const CATEGORIES: Record<SubscriptionCategory, { label: string; icon: string }> = {
-  streaming: { label: "Streaming & TV", icon: "🎬" },
-  music: { label: "Music & audio", icon: "🎵" },
-  cloud: { label: "Cloud storage", icon: "☁️" },
-  software: { label: "Software & productivity", icon: "💼" },
-  ai: { label: "AI tools", icon: "✨" },
-  gaming: { label: "Gaming", icon: "🎮" },
-  news: { label: "News & reading", icon: "📰" },
-  fitness: { label: "Fitness & health", icon: "💪" },
-  education: { label: "Learning", icon: "🎓" },
-  food: { label: "Food & delivery", icon: "🍔" },
-  shopping: { label: "Shopping & memberships", icon: "🛍️" },
-  telecom: { label: "Phone & internet", icon: "📱" },
-  other: { label: "Other", icon: "📦" },
-};
 const catOf = (s: Sub): SubscriptionCategory => s.category ?? "other";
 
-/** Popular services in the US and India; picking one fills the name, logo and category. */
-const POPULAR: [string, string, SubscriptionCategory][] = [
-  ["Netflix", "netflix.com", "streaming"], ["Spotify", "spotify.com", "music"], ["YouTube Premium", "youtube.com", "streaming"],
-  ["Prime Video", "primevideo.com", "streaming"], ["Disney+ Hotstar", "hotstar.com", "streaming"], ["JioCinema", "jiocinema.com", "streaming"],
-  ["SonyLIV", "sonyliv.com", "streaming"], ["ZEE5", "zee5.com", "streaming"], ["Apple One", "apple.com", "streaming"],
-  ["iCloud+", "icloud.com", "cloud"], ["Google One", "one.google.com", "cloud"], ["ChatGPT Plus", "openai.com", "ai"],
-  ["Claude Pro", "claude.ai", "ai"], ["Microsoft 365", "microsoft.com", "software"], ["Adobe Creative Cloud", "adobe.com", "software"],
-  ["Canva Pro", "canva.com", "software"], ["Notion", "notion.so", "software"], ["Dropbox", "dropbox.com", "cloud"],
-  ["LinkedIn Premium", "linkedin.com", "education"], ["Audible", "audible.com", "music"], ["Kindle Unlimited", "amazon.com", "news"],
-  ["Swiggy One", "swiggy.com", "food"], ["Zomato Gold", "zomato.com", "food"], ["Hulu", "hulu.com", "streaming"],
-  ["Max", "max.com", "streaming"], ["Duolingo", "duolingo.com", "education"],
-];
 
 const STATUS = { all: "All statuses", soon: "Renewing in 7 days", overdue: "Overdue", manual: "Auto-renew off", muted: "Reminders off" } as const;
 type Status = keyof typeof STATUS;
@@ -68,6 +43,8 @@ export default function SubscriptionsPage() {
   // Totals in the user's currency only; mixed-currency subs are rare and would need FX.
   const monthlyOf = (rows: Sub[]) => rows.filter((s) => s.currency === currency).reduce((sum, s) => sum + monthlyCost(s.amount, s.cadence), 0);
   const monthly = monthlyOf(list);
+  const other = currency === "USD" ? "INR" : "USD";
+  const otherMonthly = list.filter((s) => s.currency === other).reduce((sum, s) => sum + monthlyCost(s.amount, s.cadence), 0);
   const next = list.find((s) => daysUntil(s.next_due_on) >= 0);
   const shown = list.filter((s) => (category === "all" || catOf(s) === category) && matches(s, status));
   const groups = [...Map.groupBy(shown, catOf)].sort(([, a], [, b]) => monthlyOf(b) - monthlyOf(a));
@@ -77,11 +54,11 @@ export default function SubscriptionsPage() {
       <section className="glass enter p-8 sm:p-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div><p className="label-mono">Subscriptions</p><h1 className="mt-2 font-serif text-6xl leading-none">Every <em className="text-gold-2">renewal.</em></h1></div>
-          <SubscriptionDialog />
+          <div className="flex gap-2"><SubscriptionImportDialog /><SubscriptionDialog /></div>
         </div>
         <dl className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <Stat label="Per month" value={formatMoney(monthly, currency)} />
-          <Stat label="Per year" value={formatMoney(monthly * 12, currency)} />
+          <Stat label="Per month" value={formatMoney(monthly, currency)} hint={otherMonthly ? `+ ${formatMoney(otherMonthly, other)} in ${other}` : undefined} />
+          <Stat label="Per year" value={formatMoney(monthly * 12, currency)} hint={otherMonthly ? `+ ${formatMoney(otherMonthly * 12, other)} in ${other}` : undefined} />
           <Stat label="Active" value={String(list.length)} />
           <Stat label="Next renewal" value={next ? shortDate(next.next_due_on) : "—"} hint={next?.name} />
         </dl>
@@ -258,9 +235,7 @@ function SubscriptionDialog({ sub }: { sub?: Sub }) {
   const [website, setWebsite] = useState(sub?.website ?? "");
   const [category, setCategory] = useState<SubscriptionCategory | "">(sub?.category ?? "");
   const [logo, setLogo] = useState<string | null>(sub?.logo ?? null);
-  const [logoError, setLogoError] = useState<string>();
   const [notify, setNotify] = useState(sub?.notify ?? true);
-  const fileRef = useRef<HTMLInputElement>(null);
   const currency = useCurrency();
   const add = useAddBill();
   const update = useUpdateBill();
@@ -270,12 +245,6 @@ function SubscriptionDialog({ sub }: { sub?: Sub }) {
     setName(n); setWebsite(w); setCategory(c); setErrors({});
   }
 
-  async function onLogo(file?: File) {
-    setLogoError(undefined);
-    if (!file) return;
-    try { setLogo(await fileToLogo(file)); } catch (e) { setLogoError(e instanceof Error ? e.message : "Couldn't use that image"); }
-    if (fileRef.current) fileRef.current.value = "";
-  }
 
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -283,7 +252,7 @@ function SubscriptionDialog({ sub }: { sub?: Sub }) {
     const f = Object.fromEntries(fd) as Record<string, string>;
     const input = {
       kind: "subscription" as const, name, website, category: category || undefined, logo: logo ?? undefined,
-      description: f.description ?? "", accountEmail: f.accountEmail ?? "", notify,
+      description: f.description ?? "", accountEmail: f.accountEmail ?? "", notify, currency: (f.currency ?? currency) as "USD" | "INR",
       amount: f.amount ?? "", cadence: (f.cadence ?? "monthly") as "monthly", nextDueOn: f.nextDueOn ?? "",
       remindDaysBefore: notify ? Number(f.remindDaysBefore ?? 7) : sub?.remind_days_before ?? 7, autopay: fd.get("autopay") === "on",
     };
@@ -318,32 +287,30 @@ function SubscriptionDialog({ sub }: { sub?: Sub }) {
           </div>
         )}
         <form onSubmit={submit} className="grid gap-4" noValidate onChange={clearErrorOnEdit(setErrors)}>
-          <div className="flex flex-wrap items-center gap-4 rounded-3xl bg-surface/50 p-4">
-            <BrandLogo key={`${domain}-${logo?.length}`} name={name || "?"} domain={domain} src={logo} className="size-16" />
-            <div className="grid flex-1 gap-1">
-              <p className="text-sm font-medium">Logo</p>
-              <p className="text-xs text-muted">{logo ? "Your uploaded logo." : "Found from the website when we can."} Upload any image; it’s fitted to {LOGO_PX}×{LOGO_PX}.</p>
-              {logoError && <p role="alert" className="text-xs text-negative">{logoError}</p>}
-              {errors.logo && <p role="alert" className="text-xs text-negative">{errors.logo}</p>}
-            </div>
-            <div className="flex gap-2">
-              <input ref={fileRef} type="file" accept="image/*" className="sr-only" id={`logo-${sub?.id ?? "new"}`} onChange={(e) => onLogo(e.target.files?.[0])} />
-              <Button type="button" variant="glass" size="sm" onClick={() => fileRef.current?.click()}><ImageUp className="size-4" aria-hidden />{logo ? "Replace" : "Upload logo"}</Button>
-              {logo && <Button type="button" variant="ghost" size="sm" onClick={() => setLogo(null)}><X className="size-4" aria-hidden />Remove</Button>}
-            </div>
+          <div>
+            <LogoDropzone value={logo} onChange={setLogo} preview={<BrandLogo key={domain ?? ""} name={name || "?"} domain={domain} className="size-16" />} />
+            {errors.logo && <p role="alert" className="mt-2 text-xs text-negative">{errors.logo}</p>}
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field id="name" label="Name" error={errors.name}><Input id="name" name="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Netflix" maxLength={60} aria-invalid={!!errors.name} /></Field>
             <Field id="website" label="Website (for the logo)" error={errors.website}><Input id="website" name="website" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="netflix.com" aria-invalid={!!errors.website} /></Field>
           </div>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-[1fr_1.3fr_1fr]">
             <Field id="category" label="Category">
               <Select id="category" name="category" value={category} onChange={(e) => setCategory(e.target.value as SubscriptionCategory)}>
                 <option value="">Choose…</option>
                 {(Object.keys(CATEGORIES) as SubscriptionCategory[]).map((c) => <option key={c} value={c}>{CATEGORIES[c].icon} {CATEGORIES[c].label}</option>)}
               </Select>
             </Field>
-            <Field id="amount" label={`Price (${sub?.currency ?? currency})`} error={errors.amount}><Input id="amount" name="amount" inputMode="decimal" defaultValue={sub ? String(sub.amount / 100) : undefined} aria-invalid={!!errors.amount} /></Field>
+            <Field id="amount" label="Price" error={errors.amount}>
+              <div className="flex gap-2">
+                <Select name="currency" aria-label="Currency" defaultValue={sub?.currency ?? currency} className="w-[92px] shrink-0 px-3">
+                  <option value="INR">₹ INR</option>
+                  <option value="USD">$ USD</option>
+                </Select>
+                <Input id="amount" name="amount" inputMode="decimal" placeholder="0.00" defaultValue={sub ? String(sub.amount / 100) : undefined} aria-invalid={!!errors.amount} />
+              </div>
+            </Field>
             <Field id="cadence" label="Billed"><Select id="cadence" name="cadence" defaultValue={sub?.cadence ?? "monthly"}><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option></Select></Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">

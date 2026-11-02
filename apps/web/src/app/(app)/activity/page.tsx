@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  cellToString, formatMoney, guessCategory, importRows, importStatement, merchantFromNarration, monthKey, type ImportedRow, type StatementImport,
+  formatMoney, guessCategory, importRows, merchantFromNarration, monthKey, type ImportedRow, type StatementImport,
 } from "@velora/core";
 import { useAccounts, useAddTransaction, useCategories, useCurrency, useDeleteTransaction, useImportTransactions, useProfile, useTransactions } from "@velora/data";
 import { fieldErrors, transactionSchema } from "@velora/schemas";
@@ -16,6 +16,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input, Select } from "@/components/ui/input";
 import { clearErrorOnEdit, Field } from "@/components/ui/label";
+import { readRows } from "@/lib/read-rows";
 import { cn } from "@/lib/utils";
 
 export default function ActivityPage() {
@@ -135,18 +136,6 @@ function AddTransactionDialog() {
 
 type Draft = ImportedRow & { include: boolean; merchant: string; categoryId: string };
 
-/** Reads CSV/TSV text or an Excel workbook (first sheet) into transactions. */
-async function readStatement(file: File, dayFirst: boolean): Promise<StatementImport> {
-  const name = file.name.toLowerCase();
-  if (name.endsWith(".xls")) throw new Error("Old .xls files aren’t supported. In Excel choose File → Save As → .xlsx or CSV, then import that.");
-  if (name.endsWith(".xlsx") || file.type.includes("spreadsheetml")) {
-    const { readSheet } = await import("read-excel-file/browser"); // loaded only when someone imports Excel
-    const rows = (await readSheet(file)) as unknown[][];
-    return importRows(rows.map((r) => r.map(cellToString)), { dayFirst });
-  }
-  return importStatement(await file.text(), { dayFirst });
-}
-
 function ImportDialog() {
   const [open, setOpen] = useState(false);
   const [result, setResult] = useState<StatementImport | null>(null);
@@ -170,7 +159,7 @@ function ImportDialog() {
     if (!file) return;
     try {
       // Indian statements write dates day-first; US ones month-first.
-      const r = await readStatement(file, profile?.home_country === "IN");
+      const r = importRows(await readRows(file), { dayFirst: profile?.home_country === "IN" });
       const byName = new Map(categories.map((c) => [c.name, c.id]));
       setResult(r);
       setCurrency(r.currency ?? home);
@@ -191,7 +180,7 @@ function ImportDialog() {
       <DialogContent
         title="Import a statement"
         description="Excel (.xlsx), CSV or TSV from any bank. We find the Date, Description and Amount (or Debit/Credit) columns, spot ₹ or $, and let you review everything before it’s saved. Re-importing the same file never creates duplicates."
-        className="w-[min(900px,calc(100vw-32px))]"
+        className="w-[min(720px,calc(100vw-32px))]"
       >
         <Field id="file" label="Statement file">
           <Input id="file" type="file" accept=".xlsx,.csv,.tsv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="pt-2.5" onChange={(e) => onFile(e.target.files?.[0])} />
@@ -228,7 +217,7 @@ function ImportDialog() {
                   </div>
                 </div>
                 <div className="mt-2 max-h-[44vh] overflow-auto rounded-2xl border border-line">
-                  <table className="w-full min-w-[640px] text-sm">
+                  <table className="w-full min-w-[560px] text-sm">
                     <thead className="sticky top-0 bg-surface text-left"><tr className="label-mono">
                       <th className="w-10 p-2"><span className="sr-only">Include</span></th><th className="p-2">Date</th><th className="p-2">Description</th><th className="p-2">Category</th><th className="p-2 text-right">Amount</th>
                     </tr></thead>
@@ -239,10 +228,10 @@ function ImportDialog() {
                           <td className="whitespace-nowrap p-2 text-muted">{d.postedOn}</td>
                           <td className="p-2"><input value={d.merchant} onChange={(e) => edit(i, { merchant: e.target.value })} title={d.description} aria-label="Description" className="w-full rounded-lg bg-transparent px-2 py-1 hover:bg-surface/70 focus:bg-surface focus:outline-2 focus:outline-gold-1" /></td>
                           <td className="p-2">
-                            <select value={d.categoryId} onChange={(e) => edit(i, { categoryId: e.target.value })} aria-label="Category" className="w-full rounded-lg bg-transparent px-1 py-1 hover:bg-surface/70 focus:outline-2 focus:outline-gold-1">
+                            <Select value={d.categoryId} onChange={(e) => edit(i, { categoryId: e.target.value })} aria-label="Category" className="h-9 rounded-xl border-transparent bg-transparent px-2 text-sm shadow-none hover:bg-surface/70">
                               <option value="">Uncategorised</option>
                               {categories.filter((c) => (d.amount > 0 ? c.kind !== "expense" : c.kind !== "income")).map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
-                            </select>
+                            </Select>
                           </td>
                           <td className={cn("whitespace-nowrap p-2 text-right font-medium", d.amount > 0 && "text-positive")}>{formatMoney(d.amount, currency, { cents: true })}</td>
                         </tr>

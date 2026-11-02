@@ -77,6 +77,8 @@ export const billSchema = z.object({
   remindDaysBefore: z.coerce.number().int().min(0).max(30).default(3),
   autopay: z.boolean().default(false),
   kind: z.enum(['bill', 'subscription']).default('bill'),
+  /** Defaults to the user's home currency when omitted. */
+  currency: currencySchema.optional(),
   category: z.enum(SUBSCRIPTION_CATEGORIES).optional(),
   description: z.string().trim().max(300, 'Keep it under 300 characters').optional(),
   accountEmail: z.union([z.email('Enter a valid email'), z.literal('')]).optional(),

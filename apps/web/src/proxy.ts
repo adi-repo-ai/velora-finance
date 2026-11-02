@@ -6,6 +6,19 @@ const PUBLIC = ["/login", "/signup", "/forgot-password", "/auth", "/privacy", "/
 
 /** Refreshes the Supabase session cookie and keeps signed-out users on the auth pages. */
 export async function proxy(request: NextRequest) {
+  // Supabase sends people to the Site URL (e.g. "/?code=…") when an email link's redirect isn't on
+  // its allow-list. Finish the sign-in at the callback instead of leaving the code in the address bar.
+  const params = request.nextUrl.searchParams;
+  const path0 = request.nextUrl.pathname;
+  if (!path0.startsWith("/auth/") && (params.has("code") || params.has("error_description"))) {
+    const to = new URL(params.has("code") ? "/auth/callback" : "/login", request.url);
+    if (params.has("code")) {
+      to.searchParams.set("code", params.get("code")!);
+      if (path0 !== "/") to.searchParams.set("next", path0);
+    } else to.searchParams.set("error", "link");
+    return NextResponse.redirect(to);
+  }
+
   let response = NextResponse.next({ request });
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_KEY, {
     cookies: {

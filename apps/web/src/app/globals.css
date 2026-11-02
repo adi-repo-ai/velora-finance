@@ -124,3 +124,55 @@ body {
 }
 @keyframes fadein { from { opacity: 0; } }
 @keyframes float { 50% { transform: translateZ(calc(var(--z) + 18px)); } }
+
+@keyframes dropdown {
+  from { opacity: 0; transform: translateY(-6px) scale(0.96); }
+}
+
+/* Everything you can click shows the hand cursor (Tailwind v4 resets buttons to the arrow). */
+button:not(:disabled), [role="button"], [role="radio"], [role="option"], [role="gridcell"], summary, select,
+label:has(> input[type="checkbox"]), label:has(> input[type="file"]), input[type="checkbox"], input[type="file"] {
+  cursor: pointer;
+}
+button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
+
+/* ── 3D sign-in card ── */
+@property --border-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.tilt-card {
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 0.25s cubic-bezier(.2, .8, .2, 1);
+  box-shadow: 0 40px 80px -30px rgb(80 55 20 / 0.45);
+  /* the light travels only along the rim: the gradient is masked to a 1.5px ring */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    pointer-events: none;
+    background: conic-gradient(from var(--border-angle), transparent 0 60%, rgb(var(--gold-1)) 72%, #fff4dc 76%, rgb(var(--gold-1)) 80%, transparent 92%);
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    animation: border-orbit 6s linear infinite;
+  }
+}
+.tilt-glare {
+  background: radial-gradient(420px circle at var(--gx, 50%) var(--gy, 0%), rgb(255 255 255 / 0.35), transparent 55%);
+  mix-blend-mode: soft-light;
+}
+@keyframes border-orbit { to { --border-angle: 360deg; } }
+
+/* ── Isometric cube loader ── */
+.cube-stage { position: relative; width: 120px; height: 90px; transform: rotateX(-30deg) rotateY(45deg); transform-style: preserve-3d; }
+.cube { position: absolute; top: 40px; left: calc(14px + var(--i) * 34px); width: 26px; height: 26px; transform-style: preserve-3d;
+  animation: cube-rise 1.4s cubic-bezier(.45, 0, .2, 1) infinite; animation-delay: calc(var(--i) * 0.16s); }
+.cube span { position: absolute; inset: 0; border-radius: 3px; }
+.cube-top { background: linear-gradient(135deg, #f8e2b8, rgb(var(--gold-1))); transform: rotateX(90deg) translateZ(13px); }
+.cube-left { background: rgb(var(--gold-1)); transform: translateZ(13px); }
+.cube-right { background: rgb(var(--gold-2)); transform: rotateY(90deg) translateZ(13px); }
+@keyframes cube-rise { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-26px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .tilt-card::after, .cube { animation: none; }
+  .tilt-card { transform: none; }
+}
