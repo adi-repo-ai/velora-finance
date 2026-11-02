@@ -20,7 +20,7 @@ export function CookieNotice() {
   }
 
   return (
-    <div role="region" aria-label="Cookie notice" className="glass fixed inset-x-3 bottom-3 z-40 mx-auto flex max-w-xl flex-wrap items-center gap-3 rounded-[22px] p-4 text-sm sm:inset-x-6 sm:bottom-6">
+    <div role="region" aria-label="Cookie notice" className="glass fixed inset-x-3 bottom-3 z-40 flex flex-wrap items-center gap-3 rounded-[22px] p-4 text-sm sm:inset-x-auto sm:bottom-6 sm:left-6 sm:max-w-sm">
       <Cookie className="size-5 shrink-0 text-gold-2" aria-hidden />
       <p className="min-w-0 flex-1 text-muted">We use only essential cookies to keep you signed in and secure. No ads, no tracking. <Link href="/privacy" className="font-medium text-gold-2 hover:underline">Privacy policy</Link></p>
       <Button size="sm" onClick={accept}>Got it</Button>

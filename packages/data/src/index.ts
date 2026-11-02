@@ -305,7 +305,7 @@ export function useAddBill() {
         await sb
           .from('recurring_items')
           .insert({
-            name: b.name, amount: b.amount, currency, cadence: b.cadence, next_due_on: b.nextDueOn,
+            name: b.name, amount: b.amount, currency: b.currency ?? currency, cadence: b.cadence, next_due_on: b.nextDueOn,
             remind_days_before: b.remindDaysBefore, autopay: b.autopay, kind: b.kind, ...billDetails(b),
           })
           .select()
@@ -334,13 +334,33 @@ export function useUpdateBill() {
         await sb
           .from('recurring_items')
           .update({
-            name: b.name, amount: b.amount, cadence: b.cadence, next_due_on: b.nextDueOn,
+            name: b.name, amount: b.amount, cadence: b.cadence, next_due_on: b.nextDueOn, ...(b.currency && { currency: b.currency }),
             remind_days_before: b.remindDaysBefore, autopay: b.autopay, ...billDetails(b),
           })
           .eq('id', id)
           .select()
           .single(),
       );
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.bills }),
+  });
+}
+
+/** Saves several bills or subscriptions at once (imports). All-or-nothing: one bad row saves none. */
+export function useAddBills() {
+  const sb = useSupabase();
+  const qc = useQueryClient();
+  const currency = useCurrency();
+  return useMutation({
+    mutationFn: async (inputs: BillInput[]) => {
+      const rows = inputs.map((input) => {
+        const b = billSchema.parse(input);
+        return {
+          name: b.name, amount: b.amount, currency: b.currency ?? currency, cadence: b.cadence, next_due_on: b.nextDueOn,
+          remind_days_before: b.remindDaysBefore, autopay: b.autopay, kind: b.kind, ...billDetails(b),
+        };
+      });
+      return must(await sb.from('recurring_items').insert(rows).select('id')).length;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.bills }),
   });

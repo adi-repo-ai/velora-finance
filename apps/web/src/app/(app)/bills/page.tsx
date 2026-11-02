@@ -4,10 +4,12 @@ import { formatMoney } from "@velora/core";
 import { useAddBill, useBills, useCurrency, useDeleteBill, useMarkBillPaid } from "@velora/data";
 import { billSchema, fieldErrors } from "@velora/schemas";
 import { useState, type FormEvent } from "react";
+import { RenewalCalendar } from "@/components/renewal-calendar";
 import { Empty, ErrorNote, Skeleton } from "@/components/states";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input, Select } from "@/components/ui/input";
 import { clearErrorOnEdit, Field } from "@/components/ui/label";
@@ -20,42 +22,45 @@ export default function BillsPage() {
   const del = useDeleteBill();
   const paid = useMarkBillPaid();
   return (
-    <section className="glass enter mx-auto max-w-3xl p-8 sm:p-10">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div><p className="label-mono">Bills</p><h1 className="mt-2 font-serif text-6xl leading-none">Never <em className="text-gold-2">miss one.</em></h1></div>
-        <AddBillDialog />
-      </div>
-      <p className="mt-3 text-sm text-muted">Rent, cards, utilities and loans. Velora reminds you before each due date. Subscriptions have their own tab.</p>
-      <div className="mt-6">
-        {bills.error && <ErrorNote error={bills.error} />}
-        {bills.isPending && <Skeleton className="h-40 w-full" />}
-        {bills.data?.length === 0 && <Empty title="No bills yet" body="Add rent, card payments, phone and utilities to see what's coming." />}
-        <ul>
-          {bills.data?.map((b) => {
-            const d = daysUntil(b.next_due_on);
-            return (
-              <li key={b.id} className="flex items-center gap-4 border-b border-line py-4">
-                <span className={cn("grid size-12 shrink-0 place-items-center rounded-2xl bg-surface/60 text-center leading-none shadow-[inset_0_0_0_1px_rgb(23_20_15/.06)]", d <= 3 && "shadow-[inset_0_0_0_1.5px_rgb(201_155_91)]")}>
-                  <span><span className="block font-serif text-xl">{new Date(`${b.next_due_on}T00:00:00`).getDate()}</span><span className="label-mono text-[9px]">{new Date(`${b.next_due_on}T00:00:00`).toLocaleString("en", { month: "short" })}</span></span>
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p>{b.name}</p>
-                  <p className={cn("text-xs text-faint", d < 0 && "text-negative")}>{d < 0 ? `${-d} ${d === -1 ? "day" : "days"} overdue` : d === 0 ? "Due today" : `In ${d} ${d === 1 ? "day" : "days"}`} · {b.cadence}{b.autopay && " · autopay"}</p>
-                </div>
-                <span className="font-serif text-2xl">{formatMoney(b.amount, b.currency)}</span>
-                <Button variant="glass" size="sm" disabled={paid.isPending} onClick={() => paid.mutate(b.id)}>Mark paid</Button>
-                <ConfirmDialog
-                  title="Delete bill?"
-                  description={<>“{b.name}” and its reminders will be removed from Velora.</>}
-                  onConfirm={() => del.mutateAsync(b.id)}
-                  trigger={<Button variant="danger" size="icon" aria-label={`Delete ${b.name}`}><Trash2 className="size-4" /></Button>}
-                />
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    </section>
+    <div className="mx-auto grid max-w-4xl gap-6">
+      <section className="glass enter p-8 sm:p-10">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div><p className="label-mono">Bills</p><h1 className="mt-2 font-serif text-6xl leading-none">Never <em className="text-gold-2">miss one.</em></h1></div>
+          <AddBillDialog />
+        </div>
+        <p className="mt-3 text-sm text-muted">Rent, cards, utilities and loans. Velora reminds you before each due date. Subscriptions have their own tab.</p>
+        <div className="mt-6">
+          {bills.error && <ErrorNote error={bills.error} />}
+          {bills.isPending && <Skeleton className="h-40 w-full" />}
+          {bills.data?.length === 0 && <Empty title="No bills yet" body="Add rent, card payments, phone and utilities to see what's coming." />}
+          <ul>
+            {bills.data?.map((b) => {
+              const d = daysUntil(b.next_due_on);
+              return (
+                <li key={b.id} className="flex items-center gap-4 border-b border-line py-4">
+                  <span className={cn("grid size-12 shrink-0 place-items-center rounded-2xl bg-surface/60 text-center leading-none shadow-[inset_0_0_0_1px_rgb(23_20_15/.06)]", d <= 3 && "shadow-[inset_0_0_0_1.5px_rgb(201_155_91)]")}>
+                    <span><span className="block font-serif text-xl">{new Date(`${b.next_due_on}T00:00:00`).getDate()}</span><span className="label-mono text-[9px]">{new Date(`${b.next_due_on}T00:00:00`).toLocaleString("en", { month: "short" })}</span></span>
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p>{b.name}</p>
+                    <p className={cn("text-xs text-faint", d < 0 && "text-negative")}>{d < 0 ? `${-d} ${d === -1 ? "day" : "days"} overdue` : d === 0 ? "Due today" : `In ${d} ${d === 1 ? "day" : "days"}`} · {b.cadence}{b.autopay && " · autopay"}</p>
+                  </div>
+                  <span className="font-serif text-2xl">{formatMoney(b.amount, b.currency)}</span>
+                  <Button variant="glass" size="sm" disabled={paid.isPending} onClick={() => paid.mutate(b.id)}>Mark paid</Button>
+                  <ConfirmDialog
+                    title="Delete bill?"
+                    description={<>“{b.name}” and its reminders will be removed from Velora.</>}
+                    onConfirm={() => del.mutateAsync(b.id)}
+                    trigger={<Button variant="danger" size="icon" aria-label={`Delete ${b.name}`}><Trash2 className="size-4" /></Button>}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </section>
+      {!!bills.data?.length && <RenewalCalendar items={bills.data} title="Due on" />}
+    </div>
   );
 }
 
@@ -88,7 +93,7 @@ function AddBillDialog() {
             <Field id="cadence" label="Repeats"><Select id="cadence" name="cadence" defaultValue="monthly"><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="yearly">Yearly</option></Select></Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="nextDueOn" label="Next due" error={errors.nextDueOn}><Input id="nextDueOn" name="nextDueOn" type="date" aria-invalid={!!errors.nextDueOn} /></Field>
+            <Field id="nextDueOn" label="Next due" error={errors.nextDueOn}><DatePicker id="nextDueOn" name="nextDueOn" aria-invalid={!!errors.nextDueOn} /></Field>
             <Field id="remindDaysBefore" label="Remind me (days before)"><Input id="remindDaysBefore" name="remindDaysBefore" type="number" min={0} max={30} defaultValue={3} /></Field>
           </div>
           <label className="flex items-center gap-3 text-sm"><input type="checkbox" name="autopay" className="size-4 accent-[rgb(var(--gold-2))]" /> Paid automatically (autopay)</label>

@@ -4,7 +4,9 @@ import { fieldErrors, signInSchema } from "@velora/schemas";
 import { Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
+import { CubeLoader } from "@/components/cube-loader";
 import { OAuthButtons } from "@/components/oauth-buttons";
 import { ErrorNote } from "@/components/states";
 import { Button } from "@/components/ui/button";
@@ -28,6 +30,7 @@ export default function LoginPage() {
   const [failure, setFailure] = useState<Error | null>(null);
   const [busy, setBusy] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [entering, setEntering] = useState(false);
   const search = useSyncExternalStore(noop, () => location.search, () => "");
   const notice = Object.entries(NOTICES).find(([k]) => search.includes(k))?.[1];
 
@@ -43,6 +46,7 @@ export default function LoginPage() {
     const { error } = await getSupabase().auth.signInWithPassword(parsed.data);
     if (error) { setBusy(false); return setFailure(error); }
     startSession(remember);
+    setEntering(true);
     router.replace("/"); // keep the spinner until the dashboard takes over
   }
 
@@ -68,6 +72,7 @@ export default function LoginPage() {
       </label>
       {failure && <ErrorNote error={failure} />}
       <Button type="submit" size="lg" loading={busy}>{busy ? "Signing you in…" : "Sign in"}</Button>
+      {entering && createPortal(<div className="fixed inset-0 z-50 grid place-items-center bg-ink/70 backdrop-blur-md"><CubeLoader label="Opening your vault" /></div>, document.body)}
       <p className="text-center text-sm text-muted">New to Velora? <Link href="/signup" className="font-medium text-gold-2 underline-offset-4 hover:underline">Create an account</Link></p>
     </form>
   );

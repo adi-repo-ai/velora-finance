@@ -1,4 +1,8 @@
-import type { ComponentProps, ReactNode } from "react";
+"use client";
+
+import { Check, ChevronDown } from "lucide-react";
+import { Select as SelectPrimitive } from "radix-ui";
+import { Children, isValidElement, useState, type ChangeEvent, type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export const fieldClass =
@@ -16,6 +20,60 @@ export function Input({ className, icon, ...props }: ComponentProps<"input"> & {
   );
 }
 
-export function Select({ className, ...props }: ComponentProps<"select">) {
-  return <select data-slot="select" className={cn(fieldClass, "appearance-none pr-9 bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 12 12%22><path d=%22M2 4l4 4 4-4%22 fill=%22none%22 stroke=%22%238a8478%22 stroke-width=%221.5%22/></svg>')] bg-[right_14px_center] bg-no-repeat", className)} {...props} />;
+const NONE = "__none__"; // Radix items can't use "" as a value
+const enc = (v: string) => (v === "" ? NONE : v);
+const dec = (v: string) => (v === NONE ? "" : v);
+
+/**
+ * Animated glass dropdown with the same API as a native <select>: pass <option> children, `value`/`onChange`
+ * or `defaultValue`, and `name` to submit with the form. onChange receives `{ target: { value } }`.
+ */
+export function Select({ className, children, value, defaultValue, onChange, name, id, disabled, ...rest }: ComponentProps<"select">) {
+  const options = Children.toArray(children).filter(isValidElement).map((o) => {
+    const p = o.props as { value?: string | number; children?: ReactNode; className?: string };
+    return { value: String(p.value ?? p.children ?? ""), label: p.children, className: p.className };
+  });
+  const [inner, setInner] = useState(String(defaultValue ?? options[0]?.value ?? ""));
+  const current = value !== undefined ? String(value) : inner;
+  function change(v: string) {
+    const real = dec(v);
+    if (value === undefined) setInner(real);
+    onChange?.({ target: { value: real, name }, currentTarget: { value: real, name } } as unknown as ChangeEvent<HTMLSelectElement>);
+  }
+  return (
+    <SelectPrimitive.Root value={enc(current)} onValueChange={change} disabled={disabled}>
+      {name && <input type="hidden" name={name} value={current} />}
+      <SelectPrimitive.Trigger
+        id={id}
+        aria-label={rest["aria-label"]}
+        aria-invalid={rest["aria-invalid"]}
+        className={cn(fieldClass, "group flex cursor-pointer items-center justify-between gap-2 text-left data-[state=open]:border-gold-1 data-[state=open]:ring-4 data-[state=open]:ring-gold-1/20", className)}
+      >
+        <span className="min-w-0 truncate"><SelectPrimitive.Value /></span>
+        <SelectPrimitive.Icon asChild>
+          <ChevronDown className="size-4 shrink-0 text-muted transition-transform duration-300 ease-[cubic-bezier(.3,1.5,.6,1)] group-data-[state=open]:rotate-180 group-data-[state=open]:text-gold-2" />
+        </SelectPrimitive.Icon>
+      </SelectPrimitive.Trigger>
+      <SelectPrimitive.Portal>
+        <SelectPrimitive.Content
+          position="popper"
+          sideOffset={6}
+          className="z-[70] max-h-[min(320px,var(--radix-select-content-available-height))] min-w-[var(--radix-select-trigger-width)] origin-[var(--radix-select-content-transform-origin)] overflow-hidden rounded-2xl border border-line bg-surface/95 p-1 shadow-[0_24px_48px_-16px_rgb(60_40_15/.4)] backdrop-blur-xl data-[state=open]:animate-[dropdown_.18s_cubic-bezier(.2,.9,.3,1.2)]"
+        >
+          <SelectPrimitive.Viewport>
+            {options.map((o) => (
+              <SelectPrimitive.Item
+                key={o.value}
+                value={enc(o.value)}
+                className={cn("relative flex cursor-pointer select-none items-center rounded-xl py-2 pl-8 pr-3 text-sm outline-none transition-colors data-[highlighted]:bg-gold-1/15 data-[state=checked]:font-medium", o.className)}
+              >
+                <SelectPrimitive.ItemIndicator className="absolute left-2.5"><Check className="size-4 text-gold-2" /></SelectPrimitive.ItemIndicator>
+                <SelectPrimitive.ItemText>{o.label}</SelectPrimitive.ItemText>
+              </SelectPrimitive.Item>
+            ))}
+          </SelectPrimitive.Viewport>
+        </SelectPrimitive.Content>
+      </SelectPrimitive.Portal>
+    </SelectPrimitive.Root>
+  );
 }

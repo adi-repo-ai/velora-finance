@@ -157,3 +157,35 @@ describe('import: any statement format', () => {
     expect(guessCategory('Mystery shop', -100)).toBeNull();
   });
 });
+
+import { occurrencesInMonth } from './index';
+
+describe('occurrencesInMonth', () => {
+  it('repeats monthly, weekly and yearly items across a month', () => {
+    expect(occurrencesInMonth('2026-11-15', 'monthly', '2026-12')).toEqual(['2026-12-15']);
+    expect(occurrencesInMonth('2026-11-15', 'monthly', '2026-10')).toEqual([]);
+    expect(occurrencesInMonth('2027-01-31', 'monthly', '2027-02')).toEqual(['2027-02-28']);
+    expect(occurrencesInMonth('2026-11-03', 'weekly', '2026-11')).toEqual(['2026-11-03', '2026-11-10', '2026-11-17', '2026-11-24']);
+    expect(occurrencesInMonth('2026-10-27', 'weekly', '2026-12')).toEqual(['2026-12-01', '2026-12-08', '2026-12-15', '2026-12-22', '2026-12-29']);
+    expect(occurrencesInMonth('2027-03-10', 'yearly', '2028-03')).toEqual(['2028-03-10']);
+    expect(occurrencesInMonth('2027-03-10', 'yearly', '2027-04')).toEqual([]);
+  });
+});
+
+import { importSubscriptionRows } from './index';
+
+describe('importSubscriptionRows', () => {
+  it('reads names, prices, cycles, dates and currencies', () => {
+    const rows = parseCsv('My subscriptions\nService,Price,Billing cycle,Next renewal,Website\nNetflix,₹649,Monthly,15/11/2026,netflix.com\nAdobe,"$239.88",Annual,2027-03-01,\nGym,45,weekly,,\n,10,,,\nBroken,abc,,,\n');
+    const r = importSubscriptionRows(rows, { dayFirst: true });
+    expect(r.rows).toEqual([
+      { name: 'Netflix', amount: 64900, cadence: 'monthly', nextDueOn: '2026-11-15', currency: 'INR', category: null, website: 'netflix.com' },
+      { name: 'Adobe', amount: 23988, cadence: 'yearly', nextDueOn: '2027-03-01', currency: 'USD', category: null, website: null },
+      { name: 'Gym', amount: 4500, cadence: 'weekly', nextDueOn: null, currency: null, category: null, website: null },
+    ]);
+    expect(r.errors.map((e) => e.line)).toEqual([6, 7]);
+  });
+  it('explains a missing header', () => {
+    expect(importSubscriptionRows([['foo', 'bar']], { dayFirst: false }).errors[0]?.reason).toMatch(/Name and a Price/);
+  });
+});
